@@ -1,3 +1,8 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import engine, get_db
@@ -10,10 +15,13 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Yamily API", version="1.0.0")
 
+# Get CORS origins from environment variable
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+
 # Add CORS middleware - allows frontend to call backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Frontend URL
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
     allow_headers=["*"],  # Allow all headers
@@ -107,11 +115,19 @@ def create_review(
     ).first()
 
     if not guest:
-        raise HTTPException(status_code=403, 
+        raise HTTPException(status_code=403,
         detail="You must join the event before submitting a review.  Please use the invite code to join."
         )
-    
-    # Calucate overall rating (average of all ratings for the event)
+
+    # Check if user already reviewed this event
+    existing_review = db.query(models.Review).filter(
+        models.Review.event_id == event_id,
+        models.Review.user_id == current_user.id
+    ).first()
+    if existing_review:
+        raise HTTPException(status_code=400, detail="You have already reviewed this event")
+
+    # Calculate overall rating (average of all ratings)
     overall = (
         review.food_quality +
         review.drama_level +
@@ -119,7 +135,6 @@ def create_review(
         review.conversation_topics
     ) / 4.0
 
-    #for now, hard code user_id = 1 (to be replaced with actual user management later)
     db_review = models.Review(
         event_id=event_id,
         user_id=current_user.id,
@@ -182,6 +197,7 @@ def get_event_reviews(event_id: int, db: Session = Depends(get_db)):
             "alcohol_availability": review.alcohol_availability,
             "conversation_topics": review.conversation_topics,
             "overall_rating": review.overall_rating,
+            "memorable_moments": review.memorable_moments,
             "review_text": review.review_text,
             "tags": review.tags,
             "created_at": review.created_at,

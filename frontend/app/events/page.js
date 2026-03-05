@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '../components/Navbar'
+import { API_URL } from '../lib/api'
 
 export default function Events() {
   // ROUTING - Navigate between pages
@@ -52,7 +53,7 @@ export default function Events() {
       const token = localStorage.getItem('token')
       
       // Call backend to create event
-      const response = await fetch('http://localhost:8000/events', {
+      const response = await fetch(`${API_URL}/events`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,10 +1,12 @@
 'use client'
 // IMPORTS - Tools and components we need
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Navbar from '../components/Navbar'
+import { API_URL } from '../lib/api'
 
-export default function Login() {
+// Inner component that uses useSearchParams
+function LoginForm() {
   // ROUTING - Navigate between pages and read URL parameters
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -56,7 +58,7 @@ export default function Login() {
       formBody.append('password', formData.password)
 
       // Call backend login API
-      const response = await fetch('http://localhost:8000/login', {
+      const response = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -164,9 +166,10 @@ export default function Login() {
             </a>
           </p>
         </div>
-        
-        {/* DEBUG PANEL - Remove this in production! */}
-        <div className="max-w-md mx-auto mt-8 p-4 bg-gray-800 text-white rounded-lg">
+
+        {/* DEBUG PANEL - Only shows in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="max-w-md mx-auto mt-8 p-4 bg-gray-800 text-white rounded-lg">
           <h3 className="text-xl font-bold mb-4">🔍 Debug Info</h3>
           
           <div className="mb-4">
@@ -199,8 +202,22 @@ export default function Login() {
               🔗 Open in JWT.io
             </a>
           )}
-        </div>
+          </div>
+        )}  {/* End debug panel conditional */}
       </div>
     </div>
+  )
+}
+
+// Default export wraps LoginForm in Suspense
+export default function Login() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-600">Loading...</p>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

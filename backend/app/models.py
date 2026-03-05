@@ -77,7 +77,7 @@ class ReviewVote(Base):
     id = Column(Integer, primary_key=True, index=True)
     review_id = Column(Integer, ForeignKey("reviews.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    vote_type = Column(String, nullable=False)  # '1 for upvote, -1 for downvote
+    vote_type = Column(Integer, nullable=False)  # 1 for upvote, -1 for downvote
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     # Relationships

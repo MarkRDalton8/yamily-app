@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '../components/Navbar'
+import { API_URL } from '../lib/api'
 
 export default function JoinEvent() {
   // ROUTING - Navigate between pages
@@ -51,7 +52,7 @@ export default function JoinEvent() {
       const token = localStorage.getItem('token')
       
       // Call backend to join event
-      const response = await fetch('http://localhost:8000/events/join', {
+      const response = await fetch(`${API_URL}/events/join`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Navbar from '../../components/Navbar'
+import { API_URL } from '../../lib/api'
 
 export default function EventDetail() {
   // ROUTING - Get event ID from URL and navigate
@@ -41,7 +42,7 @@ export default function EventDetail() {
       setLoading(true)
       
       // Fetch reviews (we don't have a "get single event" endpoint yet, so we just get reviews)
-      const response = await fetch(`http://localhost:8000/events/${eventId}/reviews`)
+      const response = await fetch(`${API_URL}/events/${eventId}/reviews`)
       
       if (!response.ok) {
         throw new Error('Failed to load event')
@@ -67,7 +68,7 @@ export default function EventDetail() {
     }
 
     try {
-      const response = await fetch(`http://localhost:8000/reviews/${reviewId}/vote`, {
+      const response = await fetch(`${API_URL}/reviews/${reviewId}/vote`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -207,6 +208,18 @@ export default function EventDetail() {
                     {review.review_text}
                   </p>
                 </div>
+
+                {/* Memorable Moments */}
+                {review.memorable_moments && (
+                  <div className="mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+                    <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                      ✨ Memorable Moments
+                    </h4>
+                    <p className="text-gray-700 italic leading-relaxed">
+                      {review.memorable_moments}
+                    </p>
+                  </div>
+                )}
 
                 {/* Tags */}
                 {review.tags && review.tags.length > 0 && (

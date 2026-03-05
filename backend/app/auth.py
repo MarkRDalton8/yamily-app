@@ -1,5 +1,6 @@
 import secrets
 import string
+import os
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -16,8 +17,11 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Secret key for JWT tokens (in production, use environment variable!)
-SECRET_KEY = "your-secret-key-change-this-in-production"
+# Secret key for JWT tokens
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("JWT_SECRET_KEY environment variable must be set")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

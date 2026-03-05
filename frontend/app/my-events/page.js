@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '../components/Navbar'
+import { API_URL } from '../lib/api'
 
 export default function MyEvents() {
   // ROUTING - Navigate between pages
@@ -40,8 +41,8 @@ export default function MyEvents() {
   const loadMyEvents = async (token) => {
     try {
       setLoading(true)
-      
-      const response = await fetch('http://localhost:8000/users/me/events', {
+
+      const response = await fetch(`${API_URL}/users/me/events`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

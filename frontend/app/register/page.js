@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '../components/Navbar'
+import { API_URL } from '../lib/api'
 
 export default function Register() {
   const router = useRouter()
@@ -19,7 +20,7 @@ export default function Register() {
     setLoading(true)
 
     try {
-      const response = await fetch('http://localhost:8000/register', {
+      const response = await fetch(`${API_URL}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -4,7 +4,7 @@ from typing import Optional, List
 
 # User Schemas
 class UserCreate(BaseModel):
-    email: str
+    email: EmailStr
     name: str
     password: str
 
@@ -54,7 +54,7 @@ class ReviewResponse(BaseModel):
     alcohol_availability: int
     conversation_topics: int
     overall_rating: float
-    memorable_moments: str
+    memorable_moments: Optional[str]
     review_text: str
     tags: List[str]
     created_at: datetime

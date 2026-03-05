@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Navbar from '../../../components/Navbar'
+import { API_URL } from '../../../lib/api'
 
 export default function SubmitReview() {
   // ROUTING - Get event ID from URL and navigate
@@ -80,7 +81,7 @@ export default function SubmitReview() {
       const token = localStorage.getItem('token')
       
       // Call backend to submit review
-      const response = await fetch(`http://localhost:8000/events/${eventId}/reviews`, {
+      const response = await fetch(`${API_URL}/events/${eventId}/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
