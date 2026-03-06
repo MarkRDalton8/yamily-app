@@ -1,2 +1,3 @@
 // Centralized API configuration
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+// Use /api proxy route to avoid mixed content issues (HTTPS -> HTTP)
+export const API_URL = '/api'
