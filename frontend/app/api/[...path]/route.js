@@ -24,7 +24,8 @@ export async function PATCH(request, { params }) {
 }
 
 async function proxyRequest(request, params, method) {
-  const path = params.path.join('/');
+  const resolvedParams = await params;
+  const path = resolvedParams.path.join('/');
   const url = new URL(request.url);
   const backendUrl = `${BACKEND_URL}/${path}${url.search}`;
 
