@@ -8,14 +8,12 @@ frontend:
     build:
       commands:
         - npm run build
+        - cp -r public .next/standalone/
+        - cp -r .next/static .next/standalone/.next/
   artifacts:
-    baseDirectory: frontend
+    baseDirectory: frontend/.next/standalone
     files:
-      - '.next/**/*'
-      - 'public/**/*'
-      - 'node_modules/**/*'
-      - 'package*.json'
-      - 'next.config.*'
+      - '**/*'
   cache:
     paths:
       - frontend/node_modules/**/*

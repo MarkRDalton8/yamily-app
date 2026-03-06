@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Remove 'standalone' for Amplify - it supports SSR natively
+  output: 'standalone',
 }
 
 export default nextConfig
