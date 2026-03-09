@@ -14,7 +14,13 @@ export default function JoinEvent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  // State for form
+  // State for login detection
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
+  const [joining, setJoining] = useState(false)
+  const [displayName, setDisplayName] = useState('')
+
+  // State for form (when not logged in)
   const [isRegistering, setIsRegistering] = useState(true) // Toggle between register/login
   const [formData, setFormData] = useState({
     email: '',
@@ -24,8 +30,25 @@ export default function JoinEvent() {
   })
   const [submitting, setSubmitting] = useState(false)
 
-  // Fetch event preview on page load
+  // Fetch event preview and check login status on page load
   useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token')
+    const userStr = localStorage.getItem('user')
+
+    if (token && userStr) {
+      setIsLoggedIn(true)
+      try {
+        const user = JSON.parse(userStr)
+        setCurrentUser(user)
+        // Check if already joined after setting user
+        checkIfAlreadyJoined(token, user)
+      } catch (err) {
+        console.error('Failed to parse user:', err)
+      }
+    }
+
+    // Fetch event preview
     fetchEventPreview()
   }, [inviteCode])
 
@@ -41,6 +64,65 @@ export default function JoinEvent() {
     } catch (err) {
       setError('Invalid invite link')
       setLoading(false)
+    }
+  }
+
+  async function checkIfAlreadyJoined(token, user) {
+    try {
+      const response = await fetch(`${API_URL}/events/preview/${inviteCode}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+
+        // Check if current user is in the joined guests list
+        if (user && data.joined_guests) {
+          const alreadyJoined = data.joined_guests.some(
+            g => g.email === user.email || g.name === user.name
+          )
+
+          if (alreadyJoined) {
+            // Redirect to event page
+            router.push(`/events/${data.id}`)
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to check join status:', err)
+    }
+  }
+
+  async function handleJoinEvent() {
+    if (!displayName.trim()) {
+      setError('Please enter a display name')
+      return
+    }
+
+    try {
+      setJoining(true)
+      setError('')
+      const token = localStorage.getItem('token')
+
+      const joinResponse = await fetch(`${API_URL}/events/join-after-login?invite_code=${inviteCode}&display_name=${encodeURIComponent(displayName)}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!joinResponse.ok) {
+        const joinData = await joinResponse.json()
+        throw new Error(joinData.detail || 'Failed to join event')
+      }
+
+      // Redirect to event page
+      router.push(`/events/${event.id}`)
+    } catch (err) {
+      setError(err.message)
+      setJoining(false)
     }
   }
 
@@ -222,102 +304,148 @@ export default function JoinEvent() {
           )}
         </div>
 
-        {/* Registration/Login Form */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex justify-center mb-6">
-            <button
-              onClick={() => setIsRegistering(true)}
-              className={`px-6 py-2 rounded-l-lg font-medium transition-colors ${
-                isRegistering
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              Sign Up
-            </button>
-            <button
-              onClick={() => setIsRegistering(false)}
-              className={`px-6 py-2 rounded-r-lg font-medium transition-colors ${
-                !isRegistering
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              Log In
-            </button>
-          </div>
+        {/* Conditional Join Section */}
+        {isLoggedIn ? (
+          // USER IS LOGGED IN - Show simple join form
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">
+              Join This Event
+            </h3>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-              {error}
-            </div>
-          )}
+            <p className="text-gray-600 mb-4">
+              You're logged in as <span className="font-semibold">{currentUser?.name || 'User'}</span>
+            </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isRegistering && (
-              <div>
-                <label className="block text-gray-700 font-medium mb-2">Your Name</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  required
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Bob Smith"
-                />
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+                {error}
               </div>
             )}
 
-            <div>
-              <label className="block text-gray-700 font-medium mb-2">Email</label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                required
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="your.email@example.com"
-              />
-            </div>
-
-            <div>
-              <label className="block text-gray-700 font-medium mb-2">Password</label>
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
-                required
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="••••••••"
-              />
-            </div>
-
-            <div>
-              <label className="block text-gray-700 font-medium mb-2">
-                Party Pseudonym 🎭
+            {/* Pseudonym input */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Choose your display name for this event:
               </label>
               <input
                 type="text"
-                value={formData.displayName}
-                onChange={(e) => setFormData({...formData, displayName: e.target.value})}
-                required
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., Uncle Chaos, Wine Aunt, The Critic"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="e.g., Wine Aunt, Uncle Chaos"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <p className="text-sm text-gray-500 mt-1">
-                This is how you'll appear in reviews - get creative!
+              <p className="text-sm text-gray-500 mt-2">
+                This is how you'll appear in reviews and comments (anonymous)
               </p>
             </div>
 
+            {/* Join button */}
             <button
-              type="submit"
-              disabled={submitting}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors"
+              onClick={handleJoinEvent}
+              disabled={joining || !displayName.trim()}
+              className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors"
             >
-              {submitting ? 'Joining...' : (isRegistering ? 'Sign Up & Join Event' : 'Log In & Join Event')}
+              {joining ? 'Joining...' : 'Join Event'}
             </button>
-          </form>
-        </div>
+          </div>
+        ) : (
+          // USER NOT LOGGED IN - Show existing login/register forms
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex justify-center mb-6">
+              <button
+                onClick={() => setIsRegistering(true)}
+                className={`px-6 py-2 rounded-l-lg font-medium transition-colors ${
+                  isRegistering
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Sign Up
+              </button>
+              <button
+                onClick={() => setIsRegistering(false)}
+                className={`px-6 py-2 rounded-r-lg font-medium transition-colors ${
+                  !isRegistering
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Log In
+              </button>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {isRegistering && (
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">Your Name</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    required
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Bob Smith"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-2">Email</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  required
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="your.email@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-2">Password</label>
+                <input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  required
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-2">
+                  Party Pseudonym 🎭
+                </label>
+                <input
+                  type="text"
+                  value={formData.displayName}
+                  onChange={(e) => setFormData({...formData, displayName: e.target.value})}
+                  required
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Uncle Chaos, Wine Aunt, The Critic"
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  This is how you'll appear in reviews - get creative!
+                </p>
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors"
+              >
+                {submitting ? 'Joining...' : (isRegistering ? 'Sign Up & Join Event' : 'Log In & Join Event')}
+              </button>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   )
