@@ -16,8 +16,12 @@ export default function Events() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    event_date: ''
+    event_date: '',
+    expected_guests: []
   })
+
+  // STATE - Track guest input field
+  const [guestInput, setGuestInput] = useState('')
   
   // STATE - Track created event (to show invite code)
   const [createdEvent, setCreatedEvent] = useState(null)
@@ -75,12 +79,41 @@ export default function Events() {
       setFormData({
         title: '',
         description: '',
-        event_date: ''
+        event_date: '',
+        expected_guests: []
       })
+      setGuestInput('')
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // FUNCTION - Add guest to list
+  const handleAddGuest = () => {
+    if (guestInput.trim()) {
+      setFormData({
+        ...formData,
+        expected_guests: [...formData.expected_guests, guestInput.trim()]
+      })
+      setGuestInput('')
+    }
+  }
+
+  // FUNCTION - Remove guest from list
+  const handleRemoveGuest = (index) => {
+    setFormData({
+      ...formData,
+      expected_guests: formData.expected_guests.filter((_, i) => i !== index)
+    })
+  }
+
+  // FUNCTION - Handle Enter key in guest input
+  const handleGuestKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleAddGuest()
     }
   }
 
@@ -103,29 +136,40 @@ export default function Events() {
           </p>
         </div>
 
-        {/* Success message - Shows invite code after creating event */}
+        {/* Success message - Shows invite link after creating event */}
         {createdEvent && (
-          <div className="bg-green-100 border-2 border-green-500 rounded-lg p-6 mb-8">
-            <h2 className="text-2xl font-bold text-green-900 mb-4">
+          <div className="bg-green-50 border border-green-200 p-6 rounded-lg mb-6">
+            <h2 className="text-2xl font-bold text-green-900 mb-2">
               🎉 Event Created Successfully!
             </h2>
-            <div className="bg-white rounded p-4 mb-4">
-              <p className="text-gray-700 mb-2">
-                <strong>Event:</strong> {createdEvent.title}
-              </p>
-              <p className="text-gray-700 mb-4">
-                <strong>Date:</strong> {new Date(createdEvent.event_date).toLocaleDateString()}
-              </p>
-              <div className="bg-blue-50 border-2 border-blue-300 rounded p-4">
-                <p className="text-sm text-gray-600 mb-2">Share this invite code:</p>
-                <p className="text-3xl font-bold text-blue-600 text-center">
-                  {createdEvent.invite_code}
-                </p>
-              </div>
+            <p className="text-gray-700 mb-3">
+              <strong>Event:</strong> {createdEvent.title}
+            </p>
+            <p className="text-gray-700 font-semibold mb-3">Share this link with your guests:</p>
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/join/${createdEvent.invite_code}`}
+                readOnly
+                className="flex-1 px-3 py-2 bg-white border rounded font-mono text-sm"
+              />
+              <button
+                onClick={() => {
+                  const link = `${window.location.origin}/join/${createdEvent.invite_code}`
+                  navigator.clipboard.writeText(link)
+                  alert('Link copied to clipboard!')
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium whitespace-nowrap"
+              >
+                Copy Link
+              </button>
             </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Send this link via text or email to your guests!
+            </p>
             <button
               onClick={() => setCreatedEvent(null)}
-              className="text-green-700 hover:text-green-900 underline"
+              className="text-green-700 hover:text-green-900 underline font-medium"
             >
               Create Another Event
             </button>
@@ -145,7 +189,7 @@ export default function Events() {
           
           <form onSubmit={handleCreateEvent}>
             <div className="mb-4">
-              <label className="block text-gray-700 mb-2">Event Title</label>
+              <label className="block text-gray-900 font-semibold mb-2">Event Title</label>
               <input
                 type="text"
                 required
@@ -157,7 +201,7 @@ export default function Events() {
             </div>
 
             <div className="mb-4">
-              <label className="block text-gray-700 mb-2">Description</label>
+              <label className="block text-gray-900 font-semibold mb-2">Description</label>
               <textarea
                 rows="3"
                 placeholder="Tell guests what to expect..."
@@ -167,8 +211,8 @@ export default function Events() {
               />
             </div>
 
-            <div className="mb-6">
-              <label className="block text-gray-700 mb-2">Event Date & Time</label>
+            <div className="mb-4">
+              <label className="block text-gray-900 font-semibold mb-2">Event Date & Time</label>
               <input
                 type="datetime-local"
                 required
@@ -176,6 +220,49 @@ export default function Events() {
                 value={formData.event_date}
                 onChange={(e) => setFormData({...formData, event_date: e.target.value})}
               />
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-gray-900 font-semibold mb-2">Expected Guests (Optional)</label>
+              <p className="text-sm text-gray-700 mb-2">
+                Add names of people you're inviting - they'll see who else is expected!
+              </p>
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="text"
+                  placeholder="e.g., Sarah Jones"
+                  className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={guestInput}
+                  onChange={(e) => setGuestInput(e.target.value)}
+                  onKeyPress={handleGuestKeyPress}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddGuest}
+                  className="px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg hover:bg-gray-300"
+                >
+                  Add
+                </button>
+              </div>
+              {formData.expected_guests.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.expected_guests.map((guest, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                    >
+                      {guest}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveGuest(index)}
+                        className="text-blue-600 hover:text-blue-800 font-bold"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <button

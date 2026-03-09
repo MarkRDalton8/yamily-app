@@ -1,19 +1,38 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 # User Schemas
 class UserCreate(BaseModel):
     email: EmailStr
     name: str
     password: str
+    invite_code: Optional[str] = None  # For auto-join on registration
+    display_name: Optional[str] = None  # Pseudonym for auto-join
+    user_type: Optional[str] = "attendee"  # "attendee" or "host", defaults to attendee
 
 class UserResponse(BaseModel):
     id: int
     email: str
     name: str
+    user_type: str  # "attendee" or "host"
     created_at: datetime
-    
+
+    class Config:
+        from_attributes = True
+
+# Expected guest schemas
+class ExpectedGuestBase(BaseModel):
+    guest_name: str
+
+class ExpectedGuestCreate(ExpectedGuestBase):
+    pass
+
+class ExpectedGuestResponse(ExpectedGuestBase):
+    id: int
+    event_id: int
+    created_at: datetime
+
     class Config:
         from_attributes = True
 
@@ -22,6 +41,7 @@ class EventCreate(BaseModel):
     title: str
     description: Optional[str] = None
     event_date: datetime
+    expected_guests: Optional[List[str]] = []  # List of guest names
 
 class EventResponse(BaseModel):
     id: int
@@ -31,7 +51,21 @@ class EventResponse(BaseModel):
     invite_code: str
     host_id: int
     created_at: datetime
-    
+    expected_guests: Optional[List[ExpectedGuestResponse]] = []
+
+    class Config:
+        from_attributes = True
+
+class EventPreview(BaseModel):
+    """Event preview for join page - shows who's invited and who's joined"""
+    id: int
+    title: str
+    description: str
+    event_date: datetime
+    host_name: str  # Name of the host
+    expected_guests: List[str]  # Just names
+    joined_guests: List[Dict[str, str]]  # [{"name": "Bob", "display_name": "Uncle Chaos"}]
+
     class Config:
         from_attributes = True
 
@@ -90,6 +124,32 @@ class VoteResponse(BaseModel):
     user_id: int
     vote_type: int
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
+
+
+# Comment schemas
+class CommentCreate(BaseModel):
+    comment_text: str
+    photo_url: Optional[str] = None  # For Day 4
+
+
+class CommentResponse(BaseModel):
+    id: int
+    event_id: int
+    user_id: int
+    comment_text: str
+    photo_url: Optional[str] = None
+    created_at: datetime
+    upvotes: int
+    downvotes: int
+    commenter_name: str  # Pseudonym of the commenter
+    user_vote: Optional[int] = None  # Current user's vote (1, -1, or None)
+
+    class Config:
+        from_attributes = True
+
+
+class CommentVoteCreate(BaseModel):
+    vote_type: int  # 1 or -1

@@ -5,6 +5,7 @@ load_dotenv()
 
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
+from typing import List
 from app.database import engine, get_db
 from app import models, schemas, auth
 from app.auth import get_current_user
@@ -42,41 +43,84 @@ def test_endpoint():
 # User registration endpoint
 @app.post("/register", response_model=schemas.UserResponse)
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    """Register a new user"""
+    """Register a new user with optional auto-join to event"""
     # Check if user already exists
     existing_user = db.query(models.User).filter(models.User.email == user.email).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    
+
     # Create new user with hashed password
     hashed_password = auth.hash_password(user.password)
     db_user = models.User(
         email=user.email,
         name=user.name,
-        hashed_password=hashed_password
+        hashed_password=hashed_password,
+        user_type=user.user_type if user.user_type else "attendee"
     )
-    
+
     # Save to database
     db.add(db_user)
+    db.flush()  # Get user ID
+
+    # If invite code provided, auto-join event
+    if user.invite_code and user.display_name:
+        event = db.query(models.Event).filter(
+            models.Event.invite_code == user.invite_code
+        ).first()
+
+        if event:
+            # Check if already joined (shouldn't happen on registration, but be safe)
+            existing_guest = db.query(models.EventGuest).filter(
+                models.EventGuest.event_id == event.id,
+                models.EventGuest.user_id == db_user.id
+            ).first()
+
+            if not existing_guest:
+                guest = models.EventGuest(
+                    event_id=event.id,
+                    user_id=db_user.id,
+                    display_name=user.display_name
+                )
+                db.add(guest)
+
     db.commit()
     db.refresh(db_user)
-    
+
     return db_user
+
+@app.post("/users/become-host")
+def become_host(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Upgrade an attendee to host (free for now)"""
+
+    if current_user.user_type == "host":
+        raise HTTPException(status_code=400, detail="You are already a host")
+
+    current_user.user_type = "host"
+    db.commit()
+    db.refresh(current_user)
+
+    return {
+        "message": "You are now a host!",
+        "user_type": current_user.user_type
+    }
 
 # event endpoint
 @app.post("/events", response_model=schemas.EventResponse)
 def create_event(
-        event: schemas.EventCreate, 
+        event: schemas.EventCreate,
         db: Session = Depends(get_db),
         current_user: models.User = Depends(get_current_user)
     ):
-    """Create a new event with an invite code"""
+    """Create a new event with an invite code and expected guests"""
     invite_code = auth.generate_invite_code()
 
     #check if the code exists (very unlikely but possible)
     while db.query(models.Event).filter(models.Event.invite_code == invite_code).first():
         invite_code = auth.generate_invite_code()
-    
+
     #use authenticated user's id as host_id
     db_event = models.Event(
         title=event.title,
@@ -85,13 +129,135 @@ def create_event(
         host_id=current_user.id,
         invite_code=invite_code
     )
-    
+
     # Save to database
     db.add(db_event)
+    db.flush()  # Get the event ID before creating related records
+
+    # Create expected guests
+    for guest_name in event.expected_guests:
+        if guest_name.strip():  # Skip empty names
+            expected_guest = models.ExpectedGuest(
+                event_id=db_event.id,
+                guest_name=guest_name.strip()
+            )
+            db.add(expected_guest)
+
+    # Auto-join host to their own event
+    host_guest = models.EventGuest(
+        event_id=db_event.id,
+        user_id=current_user.id,
+        display_name=current_user.name  # Host uses real name as display name
+    )
+    db.add(host_guest)
+
     db.commit()
     db.refresh(db_event)
-    
+
     return db_event
+
+@app.get("/events/{event_id}")
+def get_event_detail(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Get full event details including host info and guests"""
+
+    # Find event
+    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    # Check if user is authorized (must be guest or host)
+    is_host = event.host_id == current_user.id
+    is_guest = db.query(models.EventGuest).filter(
+        models.EventGuest.event_id == event_id,
+        models.EventGuest.user_id == current_user.id
+    ).first() is not None
+
+    if not is_host and not is_guest:
+        raise HTTPException(status_code=403, detail="You must join the event to view details")
+
+    # Get host info
+    host = db.query(models.User).filter(models.User.id == event.host_id).first()
+
+    # Get guests with pseudonyms
+    guests = db.query(models.EventGuest).filter(
+        models.EventGuest.event_id == event_id
+    ).all()
+
+    # Get review count
+    review_count = db.query(models.Review).filter(models.Review.event_id == event_id).count()
+
+    # Get comment count
+    comment_count = db.query(models.EventComment).filter(models.EventComment.event_id == event_id).count()
+
+    return {
+        "id": event.id,
+        "title": event.title,
+        "description": event.description,
+        "event_date": event.event_date,
+        "invite_code": event.invite_code,
+        "host": {
+            "id": host.id if host else None,
+            "name": host.name if host else "Unknown"
+        },
+        "guests": [
+            {
+                "id": guest.id,
+                "display_name": guest.display_name,
+                "joined_at": guest.joined_at
+            }
+            for guest in guests
+        ],
+        "review_count": review_count,
+        "comment_count": comment_count,
+        "created_at": event.created_at
+    }
+
+@app.get("/events/preview/{invite_code}", response_model=schemas.EventPreview)
+def get_event_preview(
+    invite_code: str,
+    db: Session = Depends(get_db)
+):
+    """Get event preview for join page - shows event details and guest list"""
+
+    # Find event by invite code
+    event = db.query(models.Event).filter(models.Event.invite_code == invite_code).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    # Get host name
+    host = db.query(models.User).filter(models.User.id == event.host_id).first()
+
+    # Get expected guests
+    expected_guests = db.query(models.ExpectedGuest).filter(
+        models.ExpectedGuest.event_id == event.id
+    ).all()
+
+    # Get joined guests (users who have joined this event)
+    joined_guests = db.query(models.EventGuest, models.User).join(
+        models.User, models.EventGuest.user_id == models.User.id
+    ).filter(
+        models.EventGuest.event_id == event.id
+    ).all()
+
+    # Format joined guests as list of dicts
+    joined_list = [
+        {"name": user.name, "display_name": guest.display_name}
+        for guest, user in joined_guests
+    ]
+
+    return {
+        "id": event.id,
+        "title": event.title,
+        "description": event.description,
+        "event_date": event.event_date,
+        "host_name": host.name if host else "Unknown",
+        "expected_guests": [eg.guest_name for eg in expected_guests],
+        "joined_guests": joined_list
+    }
 
 #review endpoint
 @app.post("/events/{event_id}/reviews", response_model=schemas.ReviewResponse)
@@ -233,7 +399,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         "token_type": "bearer",
         "user_id": user.id,
         "email": user.email,
-        "name": user.name
+        "name": user.name,
+        "user_type": user.user_type
     }
 
 @app.post("/events/join", response_model=schemas.EventGuestResponse)
@@ -247,31 +414,65 @@ def join_event(
     event = db.query(models.Event).filter(
         models.Event.invite_code == guest_data.invite_code
     ).first()
-    
+
     if not event:
         raise HTTPException(status_code=404, detail="Invalid invite code")
-    
+
     # Check if user already joined this event
     existing_guest = db.query(models.EventGuest).filter(
         models.EventGuest.event_id == event.id,
         models.EventGuest.user_id == current_user.id
     ).first()
-    
+
     if existing_guest:
         raise HTTPException(status_code=400, detail="You already joined this event")
-    
+
     # Create guest record with display name
     guest = models.EventGuest(
         event_id=event.id,
         user_id=current_user.id,
         display_name=guest_data.display_name
     )
-    
+
     db.add(guest)
     db.commit()
     db.refresh(guest)
-    
+
     return guest
+
+@app.post("/events/join-after-login")
+def join_event_after_login(
+    invite_code: str,
+    display_name: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Join an event after logging in (for users who clicked invite link)"""
+
+    # Find event by invite code
+    event = db.query(models.Event).filter(models.Event.invite_code == invite_code).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    # Check if already joined
+    existing_guest = db.query(models.EventGuest).filter(
+        models.EventGuest.event_id == event.id,
+        models.EventGuest.user_id == current_user.id
+    ).first()
+
+    if existing_guest:
+        raise HTTPException(status_code=400, detail="You have already joined this event")
+
+    # Join event with pseudonym
+    guest = models.EventGuest(
+        event_id=event.id,
+        user_id=current_user.id,
+        display_name=display_name
+    )
+    db.add(guest)
+    db.commit()
+
+    return {"event_id": event.id, "message": "Successfully joined event"}
 
 @app.post("/reviews/{review_id}/vote", response_model=schemas.VoteResponse)
 def vote_on_review(
@@ -353,3 +554,253 @@ def get_my_events(db: Session = Depends(get_db), current_user: models.User = Dep
             for e in joined_events
         ]
     }
+
+
+# ============================================================================
+# COMMENT ENDPOINTS - Live Event Feed
+# ============================================================================
+
+@app.post("/events/{event_id}/comments", response_model=schemas.CommentResponse)
+def create_comment(
+    event_id: int,
+    comment: schemas.CommentCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Create a comment on an event (must be a guest of the event)"""
+
+    # Check if event exists
+    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    # Check if user is a guest of this event
+    guest = db.query(models.EventGuest).filter(
+        models.EventGuest.event_id == event_id,
+        models.EventGuest.user_id == current_user.id
+    ).first()
+
+    if not guest:
+        raise HTTPException(status_code=403, detail="You must join the event to comment")
+
+    # Validate photo if present
+    if comment.photo_url:
+        # Check if it's a valid base64 image
+        if not comment.photo_url.startswith('data:image/'):
+            raise HTTPException(status_code=400, detail="Invalid image format")
+
+        # Check size (base64 string length roughly = file size * 1.37)
+        # Limit to ~5MB
+        if len(comment.photo_url) > 7000000:  # ~5MB in base64
+            raise HTTPException(status_code=400, detail="Image too large (max 5MB)")
+
+    # Create comment
+    db_comment = models.EventComment(
+        event_id=event_id,
+        user_id=current_user.id,
+        comment_text=comment.comment_text,
+        photo_url=comment.photo_url
+    )
+    db.add(db_comment)
+    db.commit()
+    db.refresh(db_comment)
+
+    # Return comment with pseudonym
+    return {
+        "id": db_comment.id,
+        "event_id": db_comment.event_id,
+        "user_id": db_comment.user_id,
+        "comment_text": db_comment.comment_text,
+        "photo_url": db_comment.photo_url,
+        "created_at": db_comment.created_at,
+        "upvotes": db_comment.upvotes,
+        "downvotes": db_comment.downvotes,
+        "commenter_name": guest.display_name,  # Use pseudonym!
+        "user_vote": None
+    }
+
+
+@app.get("/events/{event_id}/comments", response_model=List[schemas.CommentResponse])
+def get_comments(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Get all comments for an event (must be a guest)"""
+
+    # Check if event exists
+    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    # Check if user is a guest
+    guest = db.query(models.EventGuest).filter(
+        models.EventGuest.event_id == event_id,
+        models.EventGuest.user_id == current_user.id
+    ).first()
+
+    if not guest:
+        raise HTTPException(status_code=403, detail="You must join the event to view comments")
+
+    # Get all comments with commenter pseudonyms
+    comments = db.query(models.EventComment).filter(
+        models.EventComment.event_id == event_id
+    ).order_by(models.EventComment.created_at.desc()).all()
+
+    # Get user's votes for these comments
+    comment_ids = [c.id for c in comments]
+    user_votes = {}
+    if comment_ids:
+        votes = db.query(models.CommentVote).filter(
+            models.CommentVote.comment_id.in_(comment_ids),
+            models.CommentVote.user_id == current_user.id
+        ).all()
+        user_votes = {v.comment_id: v.vote_type for v in votes}
+
+    # Build response with pseudonyms
+    result = []
+    for comment in comments:
+        # Get commenter's pseudonym
+        commenter_guest = db.query(models.EventGuest).filter(
+            models.EventGuest.event_id == event_id,
+            models.EventGuest.user_id == comment.user_id
+        ).first()
+
+        result.append({
+            "id": comment.id,
+            "event_id": comment.event_id,
+            "user_id": comment.user_id,
+            "comment_text": comment.comment_text,
+            "photo_url": comment.photo_url,
+            "created_at": comment.created_at,
+            "upvotes": comment.upvotes,
+            "downvotes": comment.downvotes,
+            "commenter_name": commenter_guest.display_name if commenter_guest else "Unknown",
+            "user_vote": user_votes.get(comment.id)
+        })
+
+    return result
+
+
+@app.post("/comments/{comment_id}/vote")
+def vote_on_comment(
+    comment_id: int,
+    vote: schemas.CommentVoteCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Upvote or downvote a comment"""
+
+    # Validate vote_type
+    if vote.vote_type not in [1, -1]:
+        raise HTTPException(status_code=400, detail="Vote must be 1 (upvote) or -1 (downvote)")
+
+    # Check if comment exists
+    comment = db.query(models.EventComment).filter(
+        models.EventComment.id == comment_id
+    ).first()
+
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    # Check if user is a guest of the event
+    guest = db.query(models.EventGuest).filter(
+        models.EventGuest.event_id == comment.event_id,
+        models.EventGuest.user_id == current_user.id
+    ).first()
+
+    if not guest:
+        raise HTTPException(status_code=403, detail="You must join the event to vote")
+
+    # Check for existing vote
+    existing_vote = db.query(models.CommentVote).filter(
+        models.CommentVote.comment_id == comment_id,
+        models.CommentVote.user_id == current_user.id
+    ).first()
+
+    if existing_vote:
+        # User already voted - update or remove
+        if existing_vote.vote_type == vote.vote_type:
+            # Same vote - remove it (un-vote)
+            # Update counts
+            if existing_vote.vote_type == 1:
+                comment.upvotes = max(0, comment.upvotes - 1)
+            else:
+                comment.downvotes = max(0, comment.downvotes - 1)
+
+            db.delete(existing_vote)
+            db.commit()
+
+            return {
+                "message": "Vote removed",
+                "upvotes": comment.upvotes,
+                "downvotes": comment.downvotes,
+                "user_vote": None
+            }
+        else:
+            # Different vote - change it
+            # Update counts (remove old, add new)
+            if existing_vote.vote_type == 1:
+                comment.upvotes = max(0, comment.upvotes - 1)
+                comment.downvotes += 1
+            else:
+                comment.downvotes = max(0, comment.downvotes - 1)
+                comment.upvotes += 1
+
+            existing_vote.vote_type = vote.vote_type
+            db.commit()
+
+            return {
+                "message": "Vote changed",
+                "upvotes": comment.upvotes,
+                "downvotes": comment.downvotes,
+                "user_vote": vote.vote_type
+            }
+    else:
+        # New vote
+        new_vote = models.CommentVote(
+            comment_id=comment_id,
+            user_id=current_user.id,
+            vote_type=vote.vote_type
+        )
+
+        # Update counts
+        if vote.vote_type == 1:
+            comment.upvotes += 1
+        else:
+            comment.downvotes += 1
+
+        db.add(new_vote)
+        db.commit()
+
+        return {
+            "message": "Vote recorded",
+            "upvotes": comment.upvotes,
+            "downvotes": comment.downvotes,
+            "user_vote": vote.vote_type
+        }
+
+
+@app.delete("/comments/{comment_id}")
+def delete_comment(
+    comment_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Delete own comment"""
+
+    comment = db.query(models.EventComment).filter(
+        models.EventComment.id == comment_id
+    ).first()
+
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    # Only the commenter can delete their comment
+    if comment.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only delete your own comments")
+
+    db.delete(comment)
+    db.commit()
+
+    return {"message": "Comment deleted"}

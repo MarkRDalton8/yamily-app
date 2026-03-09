@@ -22,18 +22,23 @@ export default function MyEvents() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  // STATE - Track user type
+  const [userType, setUserType] = useState('attendee')
+
   // EFFECT - Load user and their events when page loads
   useEffect(() => {
     const storedUser = localStorage.getItem('user')
     const token = localStorage.getItem('token')
-    
+
     // If not logged in, redirect to login
     if (!storedUser || !token) {
       router.push('/login')
       return
     }
-    
-    setUser(JSON.parse(storedUser))
+
+    const userData = JSON.parse(storedUser)
+    setUser(userData)
+    setUserType(userData.user_type || 'attendee')
     loadMyEvents(token)
   }, [router])
 
@@ -54,13 +59,64 @@ export default function MyEvents() {
 
       const data = await response.json()
       setHostedEvents(data.hosted)
-      setJoinedEvents(data.joined)
-      
+
+      // Filter out events that the user is hosting from the joined events
+      // to prevent duplicates (hosts are auto-joined as guests)
+      const hostedEventIds = data.hosted.map(event => event.id)
+      const attendingOnly = data.joined.filter(event => !hostedEventIds.includes(event.id))
+      setJoinedEvents(attendingOnly)
+
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
+  }
+
+  // FUNCTION - Upgrade user to host
+  const handleBecomeHost = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${API_URL}/users/become-host`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to upgrade account')
+      }
+
+      // Update stored user object
+      const updatedUser = { ...user, user_type: 'host' }
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+      setUserType('host')
+      setUser(updatedUser)
+
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  // FUNCTION - Copy invite link to clipboard
+  const copyInviteLink = (inviteCode) => {
+    const inviteUrl = `${window.location.origin}/join/${inviteCode}`
+    navigator.clipboard.writeText(inviteUrl).then(() => {
+      // Could add a toast notification here later
+      alert('Invite link copied to clipboard!')
+    }).catch(err => {
+      console.error('Failed to copy:', err)
+    })
+  }
+
+  // FUNCTION - Copy just the invite code to clipboard
+  const copyInviteCode = (inviteCode) => {
+    navigator.clipboard.writeText(inviteCode).then(() => {
+      alert('Invite code copied to clipboard!')
+    }).catch(err => {
+      console.error('Failed to copy:', err)
+    })
   }
 
   // If not logged in yet, show nothing (will redirect)
@@ -78,7 +134,9 @@ export default function MyEvents() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">My Events</h1>
           <p className="text-gray-600">
-            Events you're hosting and events you've joined
+            {userType === 'host'
+              ? "Events you're hosting and events you've joined"
+              : "Events you've joined"}
           </p>
         </div>
 
@@ -95,8 +153,10 @@ export default function MyEvents() {
             <p className="text-gray-600">Loading your events...</p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* HOSTED EVENTS - Events I created */}
+          <>
+            <div className={userType === 'host' ? 'grid md:grid-cols-2 gap-8' : 'max-w-2xl'}>
+            {/* HOSTED EVENTS - Events I created - ONLY SHOW FOR HOSTS */}
+            {userType === 'host' && (
             <div>
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-gray-900">
@@ -123,32 +183,90 @@ export default function MyEvents() {
               ) : (
                 <div className="space-y-4">
                   {hostedEvents.map((event) => (
-                    <div key={event.id} className="bg-white rounded-lg shadow-md p-6">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">
-                        {event.title}
-                      </h3>
-                      {event.description && (
-                        <p className="text-gray-600 text-sm mb-3">
-                          {event.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-                        <span>📅 {new Date(event.event_date).toLocaleDateString()}</span>
-                        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-mono">
-                          {event.invite_code}
+                    <div
+                      key={event.id}
+                      onClick={() => router.push(`/events/${event.id}`)}
+                      className="bg-white rounded-lg shadow-md p-6 hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer border-2 border-transparent hover:border-blue-200"
+                    >
+                      {/* Header with title and badge */}
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="text-xl font-bold text-gray-800 hover:text-blue-600 transition-colors">
+                          {event.title}
+                        </h3>
+                        <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">
+                          Hosting
                         </span>
                       </div>
-                      
-                     <a  href={`/events/${event.id}`}
-                        className="text-blue-600 hover:text-blue-800 text-sm underline"
-                      >
-                        View Reviews →
-                      </a>
+
+                      {/* Event date */}
+                      <p className="text-gray-600 mb-2 flex items-center gap-2">
+                        <span>📅</span>
+                        <span>{new Date(event.event_date).toLocaleString()}</span>
+                      </p>
+
+                      {/* Description */}
+                      {event.description && (
+                        <p className="text-gray-700 mb-4 line-clamp-2">{event.description}</p>
+                      )}
+
+                      {/* Shareable link section */}
+                      <div className="mb-4 bg-gray-50 rounded-lg p-3 space-y-3" onClick={(e) => e.stopPropagation()}>
+                        {/* Invite Code */}
+                        <div>
+                          <p className="text-xs text-gray-600 mb-2 font-medium">Invite Code:</p>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={event.invite_code}
+                              readOnly
+                              className="flex-1 px-3 py-2 bg-white border rounded text-sm font-mono font-bold text-center tracking-wider"
+                              onClick={(e) => e.target.select()}
+                            />
+                            <button
+                              onClick={() => copyInviteCode(event.invite_code)}
+                              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors font-medium text-sm whitespace-nowrap"
+                            >
+                              Copy Code
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Shareable Link */}
+                        <div>
+                          <p className="text-xs text-gray-600 mb-2 font-medium">Shareable Link:</p>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={`${typeof window !== 'undefined' ? window.location.origin : ''}/join/${event.invite_code}`}
+                              readOnly
+                              className="flex-1 px-3 py-2 bg-white border rounded text-sm font-mono"
+                              onClick={(e) => e.target.select()}
+                            />
+                            <button
+                              onClick={() => copyInviteLink(event.invite_code)}
+                              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium text-sm whitespace-nowrap"
+                            >
+                              Copy Link
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action button */}
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => router.push(`/events/${event.id}`)}
+                          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 font-semibold transition-all shadow-md hover:shadow-lg"
+                        >
+                          View Event Details →
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
+            )}
 
             {/* JOINED EVENTS - Events I'm a guest at */}
             <div>
@@ -177,31 +295,52 @@ export default function MyEvents() {
               ) : (
                 <div className="space-y-4">
                   {joinedEvents.map((event) => (
-                    <div key={event.id} className="bg-white rounded-lg shadow-md p-6">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">
-                        {event.title}
-                      </h3>
-                      {event.description && (
-                        <p className="text-gray-600 text-sm mb-3">
-                          {event.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-                        <span>📅 {new Date(event.event_date).toLocaleDateString()}</span>
+                    <div
+                      key={event.id}
+                      onClick={() => router.push(`/events/${event.id}`)}
+                      className="bg-white rounded-lg shadow-md p-6 hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer border-2 border-transparent hover:border-purple-200"
+                    >
+                      {/* Header with title and badge */}
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="text-xl font-bold text-gray-800 hover:text-purple-600 transition-colors">
+                          {event.title}
+                        </h3>
+                        <span className="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-medium">
+                          Attending
+                        </span>
                       </div>
-                      <div className="flex gap-3">
-                        
-                         <a href={`/events/${event.id}`}
-                          className="text-blue-600 hover:text-blue-800 text-sm underline"
+
+                      {/* Event date */}
+                      <p className="text-gray-600 mb-2 flex items-center gap-2">
+                        <span>📅</span>
+                        <span>{new Date(event.event_date).toLocaleString()}</span>
+                      </p>
+
+                      {/* Description */}
+                      {event.description && (
+                        <p className="text-gray-700 mb-4 line-clamp-2">{event.description}</p>
+                      )}
+
+                      {/* Stats */}
+                      <div className="flex gap-4 text-sm text-gray-500 mb-4 pb-4 border-b">
+                        <span className="flex items-center gap-1">
+                          <span>💬</span>
+                          <span>Check live feed</span>
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span>⭐</span>
+                          <span>Leave a review</span>
+                        </span>
+                      </div>
+
+                      {/* Action button */}
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => router.push(`/events/${event.id}`)}
+                          className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-3 rounded-lg hover:from-purple-700 hover:to-purple-800 font-semibold transition-all shadow-md hover:shadow-lg"
                         >
-                          View Reviews →
-                        </a>
-                        
-                         <a href={`/events/${event.id}/review`}
-                          className="text-green-600 hover:text-green-800 text-sm underline"
-                        >
-                          Submit Review →
-                        </a>
+                          View Event Details →
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -209,6 +348,31 @@ export default function MyEvents() {
               )}
             </div>
           </div>
+
+          {/* UPGRADE CARD - Only show for attendees */}
+          {userType === 'attendee' && (
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200 p-6 mt-8">
+              <div className="flex items-start gap-4">
+                <div className="text-4xl">🎉</div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    Want to host your own events?
+                  </h3>
+                  <p className="text-gray-700 mb-4">
+                    Upgrade to a host account to create and manage your own family gatherings.
+                    Share invite codes, track RSVPs, and collect reviews!
+                  </p>
+                  <button
+                    onClick={handleBecomeHost}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
+                  >
+                    Become a Host
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </div>
     </div>

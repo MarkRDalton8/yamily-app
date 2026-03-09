@@ -8,14 +8,17 @@ export default function Navbar() {
   const router = useRouter()
   const pathname = usePathname()
   
-  // STATE - Track logged-in user
+  // STATE - Track logged-in user and user type
   const [user, setUser] = useState(null)
+  const [userType, setUserType] = useState('attendee')
 
   // EFFECT - Check if user is logged in when navbar loads or route changes
   useEffect(() => {
     const storedUser = localStorage.getItem('user')
     if (storedUser) {
-      setUser(JSON.parse(storedUser))
+      const userData = JSON.parse(storedUser)
+      setUser(userData)
+      setUserType(userData.user_type || 'attendee')
     }
   }, [pathname]) // Re-check when route changes
 
@@ -64,9 +67,12 @@ export default function Navbar() {
                 <a href="/my-events" className="text-gray-600 hover:text-gray-900">
                   My Events
                 </a>
-                <a href="/events" className="text-gray-600 hover:text-gray-900">
-                  Create Event
-                </a>
+                {/* Only show Create Event for hosts */}
+                {userType === 'host' && (
+                  <a href="/events" className="text-gray-600 hover:text-gray-900">
+                    Create Event
+                  </a>
+                )}
                 <a href="/join" className="text-gray-600 hover:text-gray-900">
                   Join Event
                 </a>

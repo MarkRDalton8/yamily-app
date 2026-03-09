@@ -80,7 +80,8 @@ function LoginForm() {
       localStorage.setItem('user', JSON.stringify({
         id: data.user_id,
         email: data.email,
-        name: data.name
+        name: data.name,
+        user_type: data.user_type || 'attendee'
       }))
 
       // Update state for debug display
@@ -89,11 +90,12 @@ function LoginForm() {
       setStoredUser(JSON.stringify({
         id: data.user_id,
         email: data.email,
-        name: data.name
+        name: data.name,
+        user_type: data.user_type || 'attendee'
       }))
 
-      // Redirect to events page
-      router.push('/events')
+      // Redirect to My Events page
+      router.push('/my-events')
     } catch (err) {
       // Show error message to user
       setError(err.message)

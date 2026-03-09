@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '../components/Navbar'
+import WelcomeScreen from '../components/WelcomeScreen'
 import { API_URL } from '../lib/api'
 
 export default function Register() {
@@ -13,6 +14,9 @@ export default function Register() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showWelcome, setShowWelcome] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState('')
+  const [registeredPassword, setRegisteredPassword] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -33,13 +37,75 @@ export default function Register() {
         throw new Error(data.detail || 'Registration failed')
       }
 
-      // Registration successful - redirect to login
-      router.push('/login?registered=true')
+      // Registration successful - store credentials and show welcome screen
+      setRegisteredEmail(formData.email)
+      setRegisteredPassword(formData.password)
+      setShowWelcome(true)
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
+  }
+
+  async function handleWelcomeChoice(userType) {
+    try {
+      // Login first
+      const loginForm = new URLSearchParams()
+      loginForm.append('username', registeredEmail)
+      loginForm.append('password', registeredPassword)
+
+      const loginResponse = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: loginForm
+      })
+
+      if (!loginResponse.ok) {
+        throw new Error('Login failed')
+      }
+
+      const loginData = await loginResponse.json()
+      localStorage.setItem('token', loginData.access_token)
+
+      // If they chose host, upgrade them
+      if (userType === 'host') {
+        await fetch(`${API_URL}/users/become-host`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${loginData.access_token}`
+          }
+        })
+
+        // Update stored user object
+        const updatedUser = {
+          id: loginData.user_id,
+          email: loginData.email,
+          name: loginData.name,
+          user_type: 'host'
+        }
+        localStorage.setItem('user', JSON.stringify(updatedUser))
+        router.push('/my-events')
+      } else {
+        // Just store user and redirect
+        const user = {
+          id: loginData.user_id,
+          email: loginData.email,
+          name: loginData.name,
+          user_type: 'attendee'
+        }
+        localStorage.setItem('user', JSON.stringify(user))
+        router.push('/my-events')
+      }
+    } catch (err) {
+      setError('Failed to complete setup')
+      setShowWelcome(false)
+    }
+  }
+
+  // Show welcome screen if registration succeeded
+  if (showWelcome) {
+    return <WelcomeScreen onSelect={handleWelcomeChoice} />
   }
 
   return (
