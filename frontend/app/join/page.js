@@ -18,7 +18,7 @@ export default function JoinPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <h1 className="text-3xl font-bold mb-4">Join an Event</h1>
+        <h1 className="text-3xl font-bold text-black mb-4">Join an Event</h1>
         <p className="text-gray-600 mb-4 text-lg">
           To join an event, you need a shareable invite link from the host.
         </p>
@@ -27,7 +27,7 @@ export default function JoinPage() {
         </p>
         <div className="bg-blue-50 border border-blue-200 p-6 rounded-lg mb-6">
           <p className="text-blue-800 font-semibold mb-2">How it works:</p>
-          <ol className="text-left text-gray-700 space-y-2">
+          <ol className="text-left text-gray-900 space-y-2">
             <li>1. Host creates an event and gets a unique invite link</li>
             <li>2. Host shares the link with you via text or email</li>
             <li>3. You click the link and join the event</li>
@@ -37,7 +37,7 @@ export default function JoinPage() {
 
         {/* Manual invite code entry section */}
         <div className="mt-8 pt-8 border-t border-gray-300 max-w-xl mx-auto">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+          <h3 className="text-lg font-semibold text-black mb-4">
             Already have an invite code?
           </h3>
           <p className="text-gray-600 mb-4">
@@ -50,7 +50,7 @@ export default function JoinPage() {
               value={inviteCode}
               onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
               placeholder="Enter code (e.g., X7K9M2A4)"
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-lg text-center sm:text-left"
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-lg text-center sm:text-left text-gray-900"
               maxLength={8}
             />
             <button
