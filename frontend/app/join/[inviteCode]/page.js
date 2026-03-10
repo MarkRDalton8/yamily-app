@@ -332,7 +332,7 @@ export default function JoinEvent() {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="e.g., Wine Aunt, Uncle Chaos"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               />
               <p className="text-sm text-gray-500 mt-2">
                 This is how you'll appear in reviews and comments (anonymous)
@@ -389,7 +389,7 @@ export default function JoinEvent() {
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     required
-                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     placeholder="e.g., Bob Smith"
                   />
                 </div>
@@ -402,7 +402,7 @@ export default function JoinEvent() {
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   required
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="your.email@example.com"
                 />
               </div>
@@ -414,7 +414,7 @@ export default function JoinEvent() {
                   value={formData.password}
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
                   required
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="••••••••"
                 />
               </div>
@@ -428,7 +428,7 @@ export default function JoinEvent() {
                   value={formData.displayName}
                   onChange={(e) => setFormData({...formData, displayName: e.target.value})}
                   required
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="e.g., Uncle Chaos, Wine Aunt, The Critic"
                 />
                 <p className="text-sm text-gray-500 mt-1">
