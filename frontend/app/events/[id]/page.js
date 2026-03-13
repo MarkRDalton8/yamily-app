@@ -43,6 +43,11 @@ export default function EventDetail() {
   // STATE - Track guests
   const [guests, setGuests] = useState([])
 
+  // STATE - Track event status and lifecycle
+  const [eventStatus, setEventStatus] = useState('upcoming') // upcoming, live, ended
+  const [changingStatus, setChangingStatus] = useState(false)
+  const [isHost, setIsHost] = useState(false)
+
   // EFFECT - Load event and reviews when page loads
   useEffect(() => {
     const storedUser = localStorage.getItem('user')
@@ -76,6 +81,11 @@ export default function EventDetail() {
       const eventData = await eventResponse.json()
       setEvent(eventData)
       setGuests(eventData.guests || [])
+      setEventStatus(eventData.status || 'upcoming')
+
+      // Check if current user is the host
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}')
+      setIsHost(eventData.host?.id === storedUser.id)
 
       // Fetch reviews
       const reviewsResponse = await fetch(`${API_URL}/events/${eventId}/reviews`)
@@ -274,6 +284,62 @@ export default function EventDetail() {
     }
   }
 
+  // FUNCTION - Start event (host only)
+  const handleStartEvent = async () => {
+    if (!confirm('Start this event? The Live Feed will become active.')) return
+
+    try {
+      setChangingStatus(true)
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${API_URL}/events/${eventId}/start`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        setEventStatus('live')
+        alert('Event started! 🎉')
+      } else {
+        const error = await response.json()
+        alert(error.detail || 'Failed to start event')
+      }
+    } catch (err) {
+      alert('Error starting event')
+    } finally {
+      setChangingStatus(false)
+    }
+  }
+
+  // FUNCTION - End event (host only)
+  const handleEndEvent = async () => {
+    if (!confirm('End this event? Guests will be able to submit reviews.')) return
+
+    try {
+      setChangingStatus(true)
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${API_URL}/events/${eventId}/end`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        setEventStatus('ended')
+        alert('Event ended! Guests can now submit reviews.')
+      } else {
+        const error = await response.json()
+        alert(error.detail || 'Failed to end event')
+      }
+    } catch (err) {
+      alert('Error ending event')
+    } finally {
+      setChangingStatus(false)
+    }
+  }
+
   // EFFECT - Load comments when Feed tab is active
   useEffect(() => {
     if (activeTab === 'feed') {
@@ -313,6 +379,69 @@ export default function EventDetail() {
       <Navbar />
       
       <div className="max-w-6xl mx-auto py-8 px-4">
+        {/* Event Status Banner */}
+        {event && (
+          <div className={`rounded-lg p-4 mb-4 ${
+            eventStatus === 'upcoming' ? 'bg-blue-100 border-blue-300' :
+            eventStatus === 'live' ? 'bg-green-100 border-green-300' :
+            'bg-gray-100 border-gray-300'
+          } border-2`}>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              {/* Status indicator */}
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">
+                  {eventStatus === 'upcoming' ? '📅' :
+                   eventStatus === 'live' ? '🎉' :
+                   '✅'}
+                </span>
+                <div>
+                  <div className="font-bold text-gray-800">
+                    {eventStatus === 'upcoming' ? 'Event Upcoming' :
+                     eventStatus === 'live' ? 'Event is LIVE!' :
+                     'Event Ended'}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {eventStatus === 'upcoming' ? 'Waiting for host to start' :
+                     eventStatus === 'live' ? 'Live Feed is active!' :
+                     'Reviews are now open'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Host controls - only show to host */}
+              {isHost && (
+                <div className="flex gap-2">
+                  {eventStatus === 'upcoming' && (
+                    <button
+                      onClick={handleStartEvent}
+                      disabled={changingStatus}
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 font-medium transition-colors"
+                    >
+                      {changingStatus ? 'Starting...' : '▶️ Start Event'}
+                    </button>
+                  )}
+
+                  {eventStatus === 'live' && (
+                    <button
+                      onClick={handleEndEvent}
+                      disabled={changingStatus}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:bg-gray-400 font-medium transition-colors"
+                    >
+                      {changingStatus ? 'Ending...' : '⏹️ End Event'}
+                    </button>
+                  )}
+
+                  {eventStatus === 'ended' && (
+                    <div className="text-sm text-gray-600 italic">
+                      Event has ended
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Event Header Section */}
         {event && (
           <div className="bg-gradient-to-r from-blue-800 to-purple-800 text-white rounded-lg shadow-xl p-8 mb-6">
@@ -428,30 +557,34 @@ export default function EventDetail() {
                 </span>
               </div>
             </button>
-            <button
-              onClick={() => setActiveTab('feed')}
-              className={`flex-1 px-6 py-4 font-semibold text-lg transition-all ${
-                activeTab === 'feed'
-                  ? 'border-b-4 border-purple-600 text-purple-600 bg-purple-50'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-              }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-2xl">💬</span>
-                <span>Live Feed</span>
-                <span className="text-sm bg-gray-200 text-gray-700 px-2 py-1 rounded-full">
-                  {comments.length}
-                </span>
-              </div>
-            </button>
+
+            {/* Live Feed - show when live or ended */}
+            {(eventStatus === 'live' || eventStatus === 'ended') && (
+              <button
+                onClick={() => setActiveTab('feed')}
+                className={`flex-1 px-6 py-4 font-semibold text-lg transition-all ${
+                  activeTab === 'feed'
+                    ? 'border-b-4 border-purple-600 text-purple-600 bg-purple-50'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-2xl">💬</span>
+                  <span>Live Feed</span>
+                  <span className="text-sm bg-gray-200 text-gray-700 px-2 py-1 rounded-full">
+                    {comments.length}
+                  </span>
+                </div>
+              </button>
+            )}
           </div>
         </div>
 
         {/* Tab Content - Reviews */}
         {activeTab === 'reviews' && (
         <div>
-          {/* Review Submission CTA */}
-          {event && new Date(event.event_date) < new Date() && user && (
+          {/* Review Submission CTA - only show if event has ended */}
+          {eventStatus === 'ended' && user && (
             <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg shadow-md p-6 mb-6 border-2 border-green-200">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
@@ -469,6 +602,20 @@ export default function EventDetail() {
                   Write Review
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Message when reviews aren't available yet */}
+          {eventStatus !== 'ended' && (
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-8 text-center mb-6">
+              <p className="text-gray-700 text-lg mb-2">
+                {eventStatus === 'upcoming'
+                  ? '📅 Reviews will be available after the event ends'
+                  : '🎉 Event is live! Reviews will open when the host ends the event.'}
+              </p>
+              <p className="text-gray-600 text-sm">
+                Check back later to share your thoughts!
+              </p>
             </div>
           )}
 
@@ -606,6 +753,18 @@ export default function EventDetail() {
         {/* Tab Content - Live Feed */}
         {activeTab === 'feed' && (
           <div>
+            {/* Message when event is upcoming */}
+            {eventStatus === 'upcoming' ? (
+              <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-8 text-center">
+                <p className="text-gray-700 text-lg mb-2">
+                  🔒 Live Feed opens when the event starts
+                </p>
+                <p className="text-gray-600 text-sm">
+                  The host will start the event when everyone arrives!
+                </p>
+              </div>
+            ) : (
+              <>
             {/* Refresh button */}
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold text-gray-800">Live Feed</h3>
@@ -776,6 +935,8 @@ export default function EventDetail() {
                   onClick={(e) => e.stopPropagation()}
                 />
               </div>
+            )}
+            </>
             )}
           </div>
         )}

@@ -1,7 +1,14 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, JSON, UniqueConstraint
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, JSON, UniqueConstraint, Enum
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from app.database import Base
+import enum
+
+# Event lifecycle status
+class EventStatus(str, enum.Enum):
+    UPCOMING = "upcoming"
+    LIVE = "live"
+    ENDED = "ended"
 
 class User(Base):
     __tablename__ = "users"
@@ -26,6 +33,7 @@ class Event(Base):
     event_date = Column(DateTime, nullable=False)
     host_id = Column(Integer, ForeignKey("users.id"))
     invite_code = Column(String, unique=True, index=True, nullable=False)
+    status = Column(String, default=EventStatus.UPCOMING.value)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships

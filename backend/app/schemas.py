@@ -49,6 +49,7 @@ class EventResponse(BaseModel):
     description: Optional[str]
     event_date: datetime
     invite_code: str
+    status: str
     host_id: int
     created_at: datetime
     expected_guests: Optional[List[ExpectedGuestResponse]] = []

@@ -199,6 +199,7 @@ def get_event_detail(
         "description": event.description,
         "event_date": event.event_date,
         "invite_code": event.invite_code,
+        "status": event.status,
         "host": {
             "id": host.id if host else None,
             "name": host.name if host else "Unknown"
@@ -215,6 +216,59 @@ def get_event_detail(
         "comment_count": comment_count,
         "created_at": event.created_at
     }
+
+@app.post("/events/{event_id}/start")
+def start_event(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Host starts an event (upcoming → live)"""
+    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    # Only host can start event
+    if event.host_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only host can start event")
+
+    # Can only start if upcoming
+    if event.status != "upcoming":
+        raise HTTPException(status_code=400, detail="Event already started or ended")
+
+    event.status = "live"
+    db.commit()
+    db.refresh(event)
+
+    return {"message": "Event started", "status": event.status}
+
+
+@app.post("/events/{event_id}/end")
+def end_event(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Host ends an event (live → ended)"""
+    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    # Only host can end event
+    if event.host_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only host can end event")
+
+    # Can only end if live
+    if event.status != "live":
+        raise HTTPException(status_code=400, detail="Event not currently live")
+
+    event.status = "ended"
+    db.commit()
+    db.refresh(event)
+
+    return {"message": "Event ended", "status": event.status}
 
 @app.get("/events/preview/{invite_code}", response_model=schemas.EventPreview)
 def get_event_preview(
@@ -273,7 +327,14 @@ def create_review(
     event = db.query(models.Event).filter(models.Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
-    
+
+    # Reviews only allowed after event ends
+    if event.status != "ended":
+        raise HTTPException(
+            status_code=400,
+            detail="Reviews can only be submitted after event has ended"
+        )
+
     # Check if a user has joined the event before they can create a review
     guest= db.query(models.EventGuest).filter(
         models.EventGuest.event_id == event_id,
@@ -538,6 +599,7 @@ def get_my_events(db: Session = Depends(get_db), current_user: models.User = Dep
                 "description": e.description,
                 "event_date": e.event_date,
                 "invite_code": e.invite_code,
+                "status": e.status,
                 "created_at": e.created_at
             }
             for e in hosted_events
@@ -549,6 +611,7 @@ def get_my_events(db: Session = Depends(get_db), current_user: models.User = Dep
                 "description": e.description,
                 "event_date": e.event_date,
                 "invite_code": e.invite_code,
+                "status": e.status,
                 "created_at": e.created_at
             }
             for e in joined_events
