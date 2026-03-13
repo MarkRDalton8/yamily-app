@@ -43,3 +43,5 @@ INFO:     127.0.0.1:57344 - "OPTIONS /events/3/comments HTTP/1.1" 200 OK
 INFO:     127.0.0.1:57344 - "GET /events/3/comments HTTP/1.1" 200 OK
 INFO:     127.0.0.1:57349 - "OPTIONS /events/3/end HTTP/1.1" 200 OK
 INFO:     127.0.0.1:57349 - "POST /events/3/end HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58660 - "OPTIONS /events/3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58660 - "GET /events/3 HTTP/1.1" 401 Unauthorized

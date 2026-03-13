@@ -22,3 +22,69 @@
  GET /events 200 in 520ms (compile: 478ms, render: 41ms)
  GET /my-events 200 in 108ms (compile: 46ms, render: 62ms)
  GET /events/3 200 in 44ms (compile: 17ms, render: 27ms)
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /events/[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /events/3 200 in 545ms (compile: 449ms, render: 96ms)
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /events/[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /events/3 200 in 29ms (compile: 2ms, render: 27ms)
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /events/[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /events/3 200 in 27ms (compile: 2ms, render: 25ms)
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /events/[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /events/3 200 in 14ms (compile: 1527µs, render: 12ms)
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /events/[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /events/3 200 in 24ms (compile: 3ms, render: 22ms)
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /events/[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /events/3 200 in 15ms (compile: 1282µs, render: 14ms)
+ ○ Compiling /_not-found/page ...
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /icon-192.png 404 in 5.0s (compile: 4.8s, render: 153ms)
+ GET /icon-192.png 404 in 65ms (compile: 4ms, render: 61ms)
+ ✓ Compiled in 305ms
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /events/[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /events/3 200 in 841ms (compile: 778ms, render: 63ms)
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /events/[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /events/[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /events/3 200 in 159ms (compile: 11ms, render: 148ms)
+ GET /events/3 200 in 15ms (compile: 1450µs, render: 13ms)
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /events/[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /events/3 200 in 18ms (compile: 1969µs, render: 16ms)
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /icon-192.png 404 in 315ms (compile: 232ms, render: 84ms)
+ ✓ Compiled in 675ms
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /events/[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /events/3 200 in 402ms (compile: 261ms, render: 140ms)
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /events/[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /events/3 200 in 54ms (compile: 7ms, render: 47ms)
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /events/[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /events/3 200 in 39ms (compile: 3ms, render: 36ms)
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /events/[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /events/3 200 in 19ms (compile: 2ms, render: 17ms)
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /events/[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /events/3 200 in 33ms (compile: 4ms, render: 30ms)
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /events/[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /events/3 200 in 142ms (compile: 2ms, render: 139ms)
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /events/[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /events/3 200 in 27ms (compile: 2ms, render: 25ms)
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /icon-192.png 404 in 171ms (compile: 73ms, render: 98ms)
