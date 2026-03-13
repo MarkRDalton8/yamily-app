@@ -112,8 +112,11 @@ function LoginForm() {
       
       <div className="max-w-md mx-auto py-12 px-4">
         <div className="bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-3xl font-bold text-black text-center mb-6">Login</h1>
-          
+          <h1 className="text-3xl font-bold text-black text-center mb-2">Welcome Back</h1>
+          <p className="text-gray-600 text-center mb-6">
+            Log in to review your latest family gathering.
+          </p>
+
           {/* Success message (after registration) */}
           {successMessage && (
             <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">

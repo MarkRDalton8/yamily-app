@@ -1,0 +1,45 @@
+INFO:     Will watch for changes in these directories: ['/Users/markdalton/code/yamily/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [10042] using StatReload
+INFO:     Started server process [10049]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:57266 - "OPTIONS /events/1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57266 - "GET /events/1 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:57275 - "GET /events/1 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:57275 - "OPTIONS /users/me/events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57275 - "GET /users/me/events HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:57282 - "OPTIONS /register HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57282 - "POST /register HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:57291 - "POST /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57291 - "GET /users/me/events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57291 - "GET /users/me/events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57295 - "GET /events/1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57295 - "GET /events/1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57302 - "GET /events/1/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57295 - "GET /events/1/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57295 - "GET /users/me/events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57302 - "GET /users/me/events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57302 - "OPTIONS /events/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57295 - "OPTIONS /events/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57295 - "GET /events/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57302 - "GET /events/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57302 - "GET /events/2/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57295 - "GET /events/2/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57295 - "GET /users/me/events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57302 - "GET /users/me/events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57326 - "OPTIONS /events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57326 - "POST /events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57339 - "GET /users/me/events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57339 - "OPTIONS /events/3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57342 - "OPTIONS /events/3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57339 - "GET /events/3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57339 - "GET /events/3/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57342 - "GET /events/3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57342 - "GET /events/3/reviews HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57344 - "OPTIONS /events/3/start HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57344 - "POST /events/3/start HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57344 - "OPTIONS /events/3/comments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57344 - "GET /events/3/comments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57349 - "OPTIONS /events/3/end HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57349 - "POST /events/3/end HTTP/1.1" 200 OK

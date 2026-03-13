@@ -300,7 +300,7 @@ export default function EventDetail() {
 
       if (response.ok) {
         setEventStatus('live')
-        alert('Event started! 🎉')
+        alert('Event started! The Live Feed is now active. Let the chaos begin. 🎊')
       } else {
         const error = await response.json()
         alert(error.detail || 'Failed to start event')
@@ -328,7 +328,7 @@ export default function EventDetail() {
 
       if (response.ok) {
         setEventStatus('ended')
-        alert('Event ended! Guests can now submit reviews.')
+        alert('Event ended! Reviews are now open. Time for the truth. ✅')
       } else {
         const error = await response.json()
         alert(error.detail || 'Failed to end event')
@@ -604,30 +604,39 @@ export default function EventDetail() {
           )}
 
           {/* Message when reviews aren't available yet */}
-          {eventStatus !== 'ended' && (
+          {eventStatus === 'upcoming' && (
             <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-8 text-center mb-6">
               <p className="text-gray-700 text-lg mb-2">
-                {eventStatus === 'upcoming'
-                  ? '📅 Reviews will be available after the event ends'
-                  : '🎉 Event is live! Reviews will open when the host ends the event.'}
+                📅 Reviews open when the event ends
               </p>
               <p className="text-gray-600 text-sm">
-                Check back later to share your thoughts!
+                Hang tight. The honest opinions come later.
               </p>
             </div>
           )}
 
-          {reviews.length === 0 ? (
-            <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg">
-              <div className="text-6xl mb-4">⭐</div>
-              <p className="text-gray-600 text-lg mb-2">No reviews yet</p>
-              <p className="text-gray-500 text-sm">
-                {event && new Date(event.event_date) < new Date()
-                  ? 'Be the first to share your experience!'
-                  : 'Reviews will appear after the event'}
+          {eventStatus === 'live' && (
+            <div className="bg-green-50 border-2 border-green-200 rounded-lg p-8 text-center mb-6">
+              <p className="text-gray-700 text-lg mb-2">
+                🎉 Event is live!
+              </p>
+              <p className="text-gray-600 text-sm">
+                Reviews unlock when the host ends the event. For now, head to the Live Feed.
               </p>
             </div>
-          ) : (
+          )}
+
+          {eventStatus === 'ended' && reviews.length === 0 && (
+            <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg mb-6">
+              <div className="text-6xl mb-4">⭐</div>
+              <p className="text-gray-700 text-lg mb-2">No reviews yet</p>
+              <p className="text-gray-600 text-sm">
+                Be the first to share the truth. We promise it's anonymous.
+              </p>
+            </div>
+          )}
+
+          {reviews.length > 0 && (
             <div className="space-y-6">
               {reviews.map((review) => (
                 <div key={review.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border-l-4 border-blue-500">
@@ -782,7 +791,7 @@ export default function EventDetail() {
                 <textarea
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Share what's happening... 🎉"
+                  placeholder="What's happening? Spill the tea... 🍵"
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-base"
                   rows="3"
                 />
@@ -841,8 +850,10 @@ export default function EventDetail() {
               <div className="text-center py-8 text-gray-600">Loading feed...</div>
             ) : comments.length === 0 ? (
               <div className="text-center py-12 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg">
-                <p className="text-gray-600 text-lg mb-2">No comments yet</p>
-                <p className="text-gray-500 text-sm">Be the first to share what's happening!</p>
+                <p className="text-gray-700 text-lg mb-2">No comments yet</p>
+                <p className="text-gray-600 text-sm">
+                  Be the first to document the madness. Share a photo, drop a comment.
+                </p>
               </div>
             ) : (
               <div className="space-y-4">

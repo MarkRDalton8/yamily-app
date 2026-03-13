@@ -93,6 +93,7 @@ export default function MyEvents() {
       localStorage.setItem('user', JSON.stringify(updatedUser))
       setUserType('host')
       setUser(updatedUser)
+      alert("You're now a host! Time to create some events. 🎊")
 
     } catch (err) {
       setError(err.message)
@@ -171,11 +172,13 @@ export default function MyEvents() {
               </div>
 
               {hostedEvents.length === 0 ? (
-                <div className="bg-white rounded-lg shadow-md p-6 text-center text-gray-600">
-                  <p className="mb-4">You haven't created any events yet.</p>
-                  
-                   <a href="/events"
-                    className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg p-8 text-center">
+                  <p className="text-gray-700 text-lg mb-2">No events hosted yet</p>
+                  <p className="text-gray-600 text-sm mb-4">
+                    Ready to subject your family to honest reviews? Create your first event.
+                  </p>
+                  <a href="/events"
+                    className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
                   >
                     Create Your First Event
                   </a>
@@ -283,14 +286,11 @@ export default function MyEvents() {
               </div>
 
               {joinedEvents.length === 0 ? (
-                <div className="bg-white rounded-lg shadow-md p-6 text-center text-gray-600">
-                  <p className="mb-4">You haven't joined any events yet.</p>
-                  
-                <a href="/join"
-                    className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                  >
-                    Join Your First Event
-                  </a>
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-8 text-center">
+                  <p className="text-gray-700 text-lg mb-2">No events joined yet</p>
+                  <p className="text-gray-600 text-sm">
+                    Waiting for an invite link? Check your messages, or maybe it got lost in the family group chat.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -351,22 +351,22 @@ export default function MyEvents() {
 
           {/* UPGRADE CARD - Only show for attendees */}
           {userType === 'attendee' && (
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200 p-6 mt-8">
+            <div className="bg-gradient-to-br from-green-50 to-blue-50 border-2 border-green-300 rounded-xl p-6 mt-8">
               <div className="flex items-start gap-4">
                 <div className="text-4xl">🎉</div>
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    Want to host your own events?
+                    Ready to Host?
                   </h3>
                   <p className="text-gray-700 mb-4">
-                    Upgrade to a host account to create and manage your own family gatherings.
-                    Share invite codes, track RSVPs, and collect reviews!
+                    Create your own events and invite family members.
+                    Someone's got to organize the chaos.
                   </p>
                   <button
                     onClick={handleBecomeHost}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
+                    className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition-colors"
                   >
-                    Become a Host
+                    Become a Host (Free)
                   </button>
                 </div>
               </div>

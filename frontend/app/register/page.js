@@ -114,8 +114,11 @@ export default function Register() {
       
       <div className="max-w-md mx-auto py-12 px-4">
         <div className="bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-3xl font-bold text-black text-center mb-6">Sign Up</h1>
-          
+          <h1 className="text-3xl font-bold text-black text-center mb-2">Join Yamily</h1>
+          <p className="text-gray-600 text-center mb-6">
+            Create your account and start rating family gatherings.
+          </p>
+
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
               {error}
