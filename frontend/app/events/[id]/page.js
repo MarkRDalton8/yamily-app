@@ -507,37 +507,35 @@ export default function EventDetail() {
           </div>
         )}
 
-        {/* Guest List Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="text-2xl">👥</span>
-            Who's Coming ({guests.length})
-          </h2>
-
-          {guests.length === 0 ? (
-            <p className="text-gray-600 text-center py-4">No guests yet</p>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {guests.map(guest => (
-                <div
-                  key={guest.id}
-                  className="flex flex-col items-center p-3 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg hover:shadow-md transition-shadow"
-                >
-                  {/* Avatar Circle */}
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg mb-2">
-                    {guest.display_name.charAt(0).toUpperCase()}
-                  </div>
-
-                  {/* Pseudonym */}
-                  <span className="text-sm font-bold text-gray-900 text-center">
-                    {guest.display_name}
-                  </span>
-                </div>
-              ))}
+        {/* Who's Coming */}
+<div className="mb-6">
+  <h3 className="text-xl font-bold mb-4">👥 Who's Coming ({guests.length})</h3>
+  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+    {guests.map(guest => {
+      const isHost = guest.user_id === event?.host_id
+      
+      return (
+        <div key={guest.id} className="text-center">
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl mx-auto mb-2 ${
+            isHost 
+              ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
+              : 'bg-gradient-to-br from-blue-500 to-purple-500'
+          }`}>
+            {guest.display_name?.charAt(0).toUpperCase() || '?'}
+          </div>
+          <div className="text-sm font-medium text-gray-800">
+            {guest.display_name}
+          </div>
+          {isHost && (
+            <div className="text-xs text-yellow-600 font-semibold mt-1">
+              👑 Host
             </div>
           )}
         </div>
-
+      )
+    })}
+  </div>
+</div>
         {/* Enhanced Tab Navigation */}
         <div className="bg-white rounded-lg shadow-md mb-6">
           <div className="flex border-b">
