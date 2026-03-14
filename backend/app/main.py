@@ -388,13 +388,13 @@ def get_event_preview(
 #review endpoint
 @app.post("/events/{event_id}/reviews", response_model=schemas.ReviewResponse)
 def create_review(
-        event_id: int, 
-        review: schemas.ReviewCreate, 
+        event_id: int,
+        review: schemas.ReviewCreate,
         db: Session = Depends(get_db),
         current_user: models.User = Depends(get_current_user)
     ):
 
-    """Submit a new review for an event"""
+    """Submit a new review for an event with custom category ratings"""
     # Check if event exists
     event = db.query(models.Event).filter(models.Event.id == event_id).first()
     if not event:
@@ -408,7 +408,7 @@ def create_review(
         )
 
     # Check if a user has joined the event before they can create a review
-    guest= db.query(models.EventGuest).filter(
+    guest = db.query(models.EventGuest).filter(
         models.EventGuest.event_id == event_id,
         models.EventGuest.user_id == current_user.id
     ).first()
@@ -426,32 +426,41 @@ def create_review(
     if existing_review:
         raise HTTPException(status_code=400, detail="You have already reviewed this event")
 
-    # Calculate overall rating (average of all ratings)
-    overall = (
-        review.food_quality +
-        review.drama_level +
-        review.alcohol_availability +
-        review.conversation_topics
-    ) / 4.0
+    # Get event categories
+    categories = db.query(models.EventCategory).filter(
+        models.EventCategory.event_id == event_id
+    ).all()
 
+    # Validate ratings match event categories
+    expected_categories = {cat.category_name for cat in categories}
+    provided_categories = set(review.ratings.keys())
+
+    if expected_categories != provided_categories:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Ratings must match event categories. Expected: {sorted(expected_categories)}"
+        )
+
+    # Validate rating values (1-5)
+    for category, rating in review.ratings.items():
+        if not isinstance(rating, int) or rating < 1 or rating > 5:
+            raise HTTPException(status_code=400, detail=f"Rating for '{category}' must be 1-5")
+
+    # Create review with custom ratings
     db_review = models.Review(
         event_id=event_id,
         user_id=current_user.id,
-        food_quality=review.food_quality,
-        drama_level=review.drama_level,
-        alcohol_availability=review.alcohol_availability,
-        conversation_topics=review.conversation_topics,
-        overall_rating=overall,
+        ratings=review.ratings,  # Store as JSON
         memorable_moments=review.memorable_moments,
         review_text=review.review_text,
         tags=review.tags
     )
-    
+
     # Save to database
     db.add(db_review)
     db.commit()
     db.refresh(db_review)
-    
+
     return db_review
 
 # Retrieve reviews for an event
@@ -491,11 +500,7 @@ def get_event_reviews(event_id: int, db: Session = Depends(get_db)):
             "id": review.id,
             "event_id": review.event_id,
             "user_id": review.user_id,
-            "food_quality": review.food_quality,
-            "drama_level": review.drama_level,
-            "alcohol_availability": review.alcohol_availability,
-            "conversation_topics": review.conversation_topics,
-            "overall_rating": review.overall_rating,
+            "ratings": review.ratings,  # Custom ratings as JSON
             "memorable_moments": review.memorable_moments,
             "review_text": review.review_text,
             "tags": review.tags,
@@ -1029,27 +1034,31 @@ def get_event_summary(event_id: int, db: Session = Depends(get_db)):
     comments = db.query(models.EventComment).filter(
         models.EventComment.event_id == event_id
     ).order_by(models.EventComment.created_at.desc()).all()
-    
-    # Calculate average ratings
-    avg_food = db.query(func.avg(models.Review.food_quality)).filter(
-        models.Review.event_id == event_id
-    ).scalar() or 0
-    
-    avg_drama = db.query(func.avg(models.Review.drama_level)).filter(
-        models.Review.event_id == event_id
-    ).scalar() or 0
-    
-    avg_alcohol = db.query(func.avg(models.Review.alcohol_availability)).filter(
-        models.Review.event_id == event_id
-    ).scalar() or 0
-    
-    avg_conversation = db.query(func.avg(models.Review.conversation_topics)).filter(
-        models.Review.event_id == event_id
-    ).scalar() or 0
-    
+
+    # Get event categories
+    categories = db.query(models.EventCategory).filter(
+        models.EventCategory.event_id == event_id
+    ).order_by(models.EventCategory.display_order).all()
+
+    # Calculate average ratings for each custom category
+    avg_ratings = {}
+    if reviews:
+        for category in categories:
+            category_name = category.category_name
+            # Calculate average for this category across all reviews
+            ratings_for_category = [r.ratings.get(category_name, 0) for r in reviews if r.ratings.get(category_name)]
+            if ratings_for_category:
+                avg_ratings[category_name] = sum(ratings_for_category) / len(ratings_for_category)
+            else:
+                avg_ratings[category_name] = 0.0
+    else:
+        # No reviews yet - all averages are 0
+        for category in categories:
+            avg_ratings[category.category_name] = 0.0
+
     # Count photos
     photos = [c for c in comments if c.photo_url]
-    
+
     # Get display names for reviews and comments
     review_data = []
     for r in reviews:
@@ -1060,10 +1069,7 @@ def get_event_summary(event_id: int, db: Session = Depends(get_db)):
         review_data.append({
             "id": r.id,
             "display_name": guest.display_name if guest else "Anonymous",
-            "food_rating": r.food_quality,
-            "drama_rating": r.drama_level,
-            "alcohol_rating": r.alcohol_availability,
-            "conversation_rating": r.conversation_topics,
+            "ratings": r.ratings,  # Custom ratings as JSON
             "memorable_moment": r.memorable_moments,
             "created_at": r.created_at
         })
@@ -1096,12 +1102,14 @@ def get_event_summary(event_id: int, db: Session = Depends(get_db)):
             "total_reviews": len(reviews),
             "total_comments": len(comments),
             "total_photos": len(photos),
-            "avg_ratings": {
-                "food": float(avg_food),
-                "drama": float(avg_drama),
-                "alcohol": float(avg_alcohol),
-                "conversation": float(avg_conversation)
-            },
+            "categories": [
+                {
+                    "category_name": cat.category_name,
+                    "category_emoji": cat.category_emoji
+                }
+                for cat in categories
+            ],
+            "avg_ratings": avg_ratings,  # Dynamic custom category averages
             "reviews": review_data,
             "comments": comment_data,
             "photos": [
@@ -1113,7 +1121,7 @@ def get_event_summary(event_id: int, db: Session = Depends(get_db)):
             ]
         }
     }
-    
+
     return summary
 
 
@@ -1144,26 +1152,30 @@ def get_all_events_admin(
         comments = db.query(models.EventComment).filter(
             models.EventComment.event_id == event.id
         ).all()
-        
-        # Calculate averages
-        avg_food = db.query(func.avg(models.Review.food_quality)).filter(
-            models.Review.event_id == event.id
-        ).scalar() or 0
-        
-        avg_drama = db.query(func.avg(models.Review.drama_level)).filter(
-            models.Review.event_id == event.id
-        ).scalar() or 0
-        
-        avg_alcohol = db.query(func.avg(models.Review.alcohol_availability)).filter(
-            models.Review.event_id == event.id
-        ).scalar() or 0
-        
-        avg_conversation = db.query(func.avg(models.Review.conversation_topics)).filter(
-            models.Review.event_id == event.id
-        ).scalar() or 0
-        
+
+        # Get event categories
+        categories = db.query(models.EventCategory).filter(
+            models.EventCategory.event_id == event.id
+        ).order_by(models.EventCategory.display_order).all()
+
+        # Calculate average ratings for each custom category
+        avg_ratings = {}
+        if reviews:
+            for category in categories:
+                category_name = category.category_name
+                # Calculate average for this category across all reviews
+                ratings_for_category = [r.ratings.get(category_name, 0) for r in reviews if r.ratings.get(category_name)]
+                if ratings_for_category:
+                    avg_ratings[category_name] = sum(ratings_for_category) / len(ratings_for_category)
+                else:
+                    avg_ratings[category_name] = 0.0
+        else:
+            # No reviews yet - all averages are 0
+            for category in categories:
+                avg_ratings[category.category_name] = 0.0
+
         photos = [c for c in comments if c.photo_url]
-        
+
         result.append({
             "event": {
                 "id": event.id,
@@ -1177,12 +1189,7 @@ def get_all_events_admin(
                 "total_reviews": len(reviews),
                 "total_comments": len(comments),
                 "total_photos": len(photos),
-                "avg_ratings": {
-                    "food": float(avg_food),
-                    "drama": float(avg_drama),
-                    "alcohol": float(avg_alcohol),
-                    "conversation": float(avg_conversation)
-                }
+                "avg_ratings": avg_ratings  # Dynamic custom category averages
             }
         })
     
