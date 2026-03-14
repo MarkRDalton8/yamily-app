@@ -103,3 +103,7 @@ Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ✓ Compiled in 1346ms
  ✓ Compiled in 767ms
  ✓ Compiled in 788ms
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET / 200 in 7.1s (compile: 5.4s, render: 1626ms)
+[?25h

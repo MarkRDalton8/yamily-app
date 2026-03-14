@@ -2,6 +2,7 @@
 // IMPORTS - Tools and components we need
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import Link from 'next/link'
 import Navbar from '../../components/Navbar'
 import { API_URL } from '../../lib/api'
 
