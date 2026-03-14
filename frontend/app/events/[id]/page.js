@@ -756,45 +756,43 @@ export default function EventDetail() {
                           {new Date(review.created_at).toLocaleDateString()}
                         </span>
                       </div>
-                      {/* Overall Rating */}
+                      {/* Overall Rating - calculated from ratings */}
                       <div className="text-right">
                         <div className="text-2xl font-bold text-blue-600">
-                          {review.overall_rating.toFixed(1)} ⭐
+                          {review.ratings && Object.keys(review.ratings).length > 0
+                            ? (Object.values(review.ratings).reduce((a, b) => a + b, 0) / Object.keys(review.ratings).length).toFixed(1)
+                            : '0.0'
+                          } ⭐
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Category Ratings with Colors */}
+                {/* Category Ratings with Colors - Dynamic based on event categories */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg p-3">
-                    <div className="text-sm text-gray-700 mb-1">Food Quality</div>
-                    <div className="text-2xl">
-                      {renderStars(review.food_quality)}
-                    </div>
-                  </div>
+                  {review.ratings && Object.entries(review.ratings).map(([categoryName, rating], index) => {
+                    const categoryColors = [
+                      'from-yellow-50 to-orange-50',
+                      'from-red-50 to-pink-50',
+                      'from-purple-50 to-indigo-50',
+                      'from-blue-50 to-cyan-50',
+                      'from-green-50 to-emerald-50',
+                      'from-pink-50 to-rose-50',
+                      'from-indigo-50 to-purple-50',
+                      'from-cyan-50 to-blue-50'
+                    ]
+                    const color = categoryColors[index % categoryColors.length]
 
-                  <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-lg p-3">
-                    <div className="text-sm text-gray-700 mb-1">Drama Level</div>
-                    <div className="text-2xl">
-                      {renderStars(review.drama_level)}
-                    </div>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-3">
-                    <div className="text-sm text-gray-700 mb-1">Alcohol</div>
-                    <div className="text-2xl">
-                      {renderStars(review.alcohol_availability)}
-                    </div>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-lg p-3">
-                    <div className="text-sm text-gray-700 mb-1">Conversation</div>
-                    <div className="text-2xl">
-                      {renderStars(review.conversation_topics)}
-                    </div>
-                  </div>
+                    return (
+                      <div key={categoryName} className={`bg-gradient-to-br ${color} rounded-lg p-3`}>
+                        <div className="text-sm text-gray-700 mb-1">{categoryName}</div>
+                        <div className="text-2xl">
+                          {renderStars(rating)}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
 
                 {/* Review Text */}
