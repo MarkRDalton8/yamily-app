@@ -226,25 +226,18 @@ export default function AdminEventsPage() {
                     </div>
                   </div>
 
-                  {/* Average Ratings */}
-                  {summary.total_reviews > 0 && (
+                  {/* Average Ratings - Dynamic */}
+                  {summary.total_reviews > 0 && summary.avg_ratings && (
                     <div className="mb-4 pb-4 border-b border-gray-200">
                       <div className="text-xs font-semibold text-gray-600 mb-2">
                         Average Ratings
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
-                        <div>
-                          Food: <span className="font-bold">{summary.avg_ratings.food.toFixed(1)}</span>
-                        </div>
-                        <div>
-                          Drama: <span className="font-bold">{summary.avg_ratings.drama.toFixed(1)}</span>
-                        </div>
-                        <div>
-                          Alcohol: <span className="font-bold">{summary.avg_ratings.alcohol.toFixed(1)}</span>
-                        </div>
-                        <div>
-                          Conv: <span className="font-bold">{summary.avg_ratings.conversation.toFixed(1)}</span>
-                        </div>
+                        {Object.entries(summary.avg_ratings).map(([categoryName, avgValue]) => (
+                          <div key={categoryName}>
+                            {categoryName}: <span className="font-bold">{avgValue.toFixed(1)}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
