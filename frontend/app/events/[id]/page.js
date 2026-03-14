@@ -594,13 +594,6 @@ export default function EventDetail() {
   <h3 className="text-xl font-bold text-gray-900 mb-4">👥 Who's Coming ({guests.length})</h3>
   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
     {guests.map(guest => {
-      // DEBUG: Log the comparison values
-      console.log('=== Guest Debug ===')
-      console.log('Guest name:', guest.display_name)
-      console.log('Guest user_id:', guest.user_id, typeof guest.user_id)
-      console.log('Event host_id:', event?.host?.id, typeof event?.host?.id)
-      console.log('Match?', guest.user_id === event?.host?.id)
-
       const isHost = guest.user_id === event?.host?.id
 
       return (
