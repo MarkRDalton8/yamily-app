@@ -518,6 +518,18 @@ export default function EventDetail() {
           </div>
         )}
 
+        {/* View Summary Button */}
+        {event && eventStatus === 'ended' && (
+          <div className="mb-6 text-center">
+            <Link
+              href={`/events/${eventId}/summary`}
+              className="inline-block px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 font-semibold transition-colors shadow-md"
+            >
+              📊 View Event Summary
+            </Link>
+          </div>
+        )}
+
         {/* Event Header Section */}
         {event && (
           <div className="bg-gradient-to-r from-blue-800 to-purple-800 text-white rounded-lg shadow-xl p-8 mb-6">

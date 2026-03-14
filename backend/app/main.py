@@ -5,6 +5,7 @@ load_dotenv()
 
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List, Optional
 from app.database import engine, get_db
 from app import models, schemas, auth
@@ -947,3 +948,193 @@ def get_all_feedback(
     ).all()
     
     return feedback_list
+
+
+# ============================================================
+# EVENT SUMMARY & ADMIN ENDPOINTS
+# ============================================================
+
+@app.get("/events/{event_id}/summary")
+def get_event_summary(event_id: int, db: Session = Depends(get_db)):
+    """
+    Get event summary - accessible without authentication.
+    Perfect for sharing with people who didn't attend.
+    """
+    
+    # Get event
+    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    # Get all guests
+    guests = db.query(models.EventGuest).filter(
+        models.EventGuest.event_id == event_id
+    ).all()
+    
+    # Get all reviews
+    reviews = db.query(models.Review).filter(
+        models.Review.event_id == event_id
+    ).all()
+    
+    # Get all comments
+    comments = db.query(models.EventComment).filter(
+        models.EventComment.event_id == event_id
+    ).order_by(models.EventComment.created_at.desc()).all()
+    
+    # Calculate average ratings
+    avg_food = db.query(func.avg(models.Review.food_quality)).filter(
+        models.Review.event_id == event_id
+    ).scalar() or 0
+    
+    avg_drama = db.query(func.avg(models.Review.drama_level)).filter(
+        models.Review.event_id == event_id
+    ).scalar() or 0
+    
+    avg_alcohol = db.query(func.avg(models.Review.alcohol_availability)).filter(
+        models.Review.event_id == event_id
+    ).scalar() or 0
+    
+    avg_conversation = db.query(func.avg(models.Review.conversation_topics)).filter(
+        models.Review.event_id == event_id
+    ).scalar() or 0
+    
+    # Count photos
+    photos = [c for c in comments if c.photo_url]
+    
+    # Get display names for reviews and comments
+    review_data = []
+    for r in reviews:
+        guest = db.query(models.EventGuest).filter(
+            models.EventGuest.event_id == event_id,
+            models.EventGuest.user_id == r.user_id
+        ).first()
+        review_data.append({
+            "id": r.id,
+            "display_name": guest.display_name if guest else "Anonymous",
+            "food_rating": r.food_quality,
+            "drama_rating": r.drama_level,
+            "alcohol_rating": r.alcohol_availability,
+            "conversation_rating": r.conversation_topics,
+            "memorable_moment": r.memorable_moments,
+            "created_at": r.created_at
+        })
+    
+    comment_data = []
+    for c in comments:
+        guest = db.query(models.EventGuest).filter(
+            models.EventGuest.event_id == event_id,
+            models.EventGuest.user_id == c.user_id
+        ).first()
+        comment_data.append({
+            "id": c.id,
+            "display_name": guest.display_name if guest else "Anonymous",
+            "comment_text": c.comment_text,
+            "photo_url": c.photo_url,
+            "created_at": c.created_at
+        })
+    
+    # Build summary
+    summary = {
+        "event": {
+            "id": event.id,
+            "event_name": event.title,
+            "event_date": event.event_date,
+            "status": event.status,
+            "description": event.description
+        },
+        "summary": {
+            "total_attendees": len(guests),
+            "total_reviews": len(reviews),
+            "total_comments": len(comments),
+            "total_photos": len(photos),
+            "avg_ratings": {
+                "food": float(avg_food),
+                "drama": float(avg_drama),
+                "alcohol": float(avg_alcohol),
+                "conversation": float(avg_conversation)
+            },
+            "reviews": review_data,
+            "comments": comment_data,
+            "photos": [
+                {
+                    "photo_url": c.photo_url,
+                    "created_at": c.created_at
+                }
+                for c in photos
+            ]
+        }
+    }
+    
+    return summary
+
+
+@app.get("/admin/events")
+def get_all_events_admin(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Admin endpoint: Get all events with summary data.
+    For now, any logged-in user can access. Add admin check later if needed.
+    """
+    
+    # Get all events
+    events = db.query(models.Event).order_by(models.Event.event_date.desc()).all()
+    
+    result = []
+    for event in events:
+        # Get summary data for each event
+        guests = db.query(models.EventGuest).filter(
+            models.EventGuest.event_id == event.id
+        ).all()
+        
+        reviews = db.query(models.Review).filter(
+            models.Review.event_id == event.id
+        ).all()
+        
+        comments = db.query(models.EventComment).filter(
+            models.EventComment.event_id == event.id
+        ).all()
+        
+        # Calculate averages
+        avg_food = db.query(func.avg(models.Review.food_quality)).filter(
+            models.Review.event_id == event.id
+        ).scalar() or 0
+        
+        avg_drama = db.query(func.avg(models.Review.drama_level)).filter(
+            models.Review.event_id == event.id
+        ).scalar() or 0
+        
+        avg_alcohol = db.query(func.avg(models.Review.alcohol_availability)).filter(
+            models.Review.event_id == event.id
+        ).scalar() or 0
+        
+        avg_conversation = db.query(func.avg(models.Review.conversation_topics)).filter(
+            models.Review.event_id == event.id
+        ).scalar() or 0
+        
+        photos = [c for c in comments if c.photo_url]
+        
+        result.append({
+            "event": {
+                "id": event.id,
+                "event_name": event.title,
+                "event_date": event.event_date,
+                "status": event.status,
+                "host_id": event.host_id
+            },
+            "summary": {
+                "total_attendees": len(guests),
+                "total_reviews": len(reviews),
+                "total_comments": len(comments),
+                "total_photos": len(photos),
+                "avg_ratings": {
+                    "food": float(avg_food),
+                    "drama": float(avg_drama),
+                    "alcohol": float(avg_alcohol),
+                    "conversation": float(avg_conversation)
+                }
+            }
+        })
+    
+    return result
