@@ -246,7 +246,7 @@ export default function SubmitReview() {
               required
               rows="6"
               placeholder="Share your experience... What stood out? Any highlights or lowlights?"
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-900"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-500 text-gray-900"
               value={formData.review_text}
               onChange={(e) => setFormData({...formData, review_text: e.target.value})}
             />
@@ -258,7 +258,7 @@ export default function SubmitReview() {
             <textarea
               rows="3"
               placeholder="Any specific moments that stood out? Uncle Bob's toast? The dog that crashed the party?"
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-900"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-500 text-gray-900"
               value={formData.memorable_moments}
               onChange={(e) => setFormData({...formData, memorable_moments: e.target.value})}
             />
@@ -275,7 +275,7 @@ export default function SubmitReview() {
               <input
                 type="text"
                 placeholder="e.g., Fondue Fail, Great Music"
-                className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-900"
+                className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-500 text-gray-900"
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyPress={(e) => {
