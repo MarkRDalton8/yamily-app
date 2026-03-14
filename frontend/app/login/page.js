@@ -113,7 +113,7 @@ function LoginForm() {
       <div className="max-w-md mx-auto py-12 px-4">
         <div className="bg-white rounded-lg shadow-md p-8">
           <h1 className="text-3xl font-bold text-black text-center mb-2">Welcome Back</h1>
-          <p className="text-gray-600 text-center mb-6">
+          <p className="text-gray-700 text-center mb-6">
             Log in to review your latest family gathering.
           </p>
 
@@ -164,7 +164,7 @@ function LoginForm() {
             </button>
           </form>
 
-          <p className="text-center mt-4 text-gray-600">
+          <p className="text-center mt-4 text-gray-700">
             Don't have an account?{' '}
             <a href="/register" className="text-blue-600 hover:underline">
               Sign Up
@@ -219,7 +219,7 @@ export default function Login() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
+        <p className="text-gray-700">Loading...</p>
       </div>
     }>
       <LoginForm />

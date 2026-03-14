@@ -131,7 +131,7 @@ export default function Events() {
         {/* Page header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Events</h1>
-          <p className="text-gray-600">
+          <p className="text-gray-700">
             Welcome back, {user.name}! Create a new event below.
           </p>
         </div>
@@ -164,7 +164,7 @@ export default function Events() {
                 Copy Link
               </button>
             </div>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-gray-700 mb-4">
               Send this link via text or email to your guests!
             </p>
             <button

@@ -43,7 +43,7 @@ export default function HomePage() {
           <p className="text-lg sm:text-xl lg:text-2xl text-gray-700 mb-3 sm:mb-4 max-w-3xl mx-auto leading-relaxed">
             Because someone needs to keep track of Uncle Bob's questionable casseroles.
           </p>
-          <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-gray-700 mb-6 sm:mb-8 max-w-2xl mx-auto">
             The honest, anonymous review platform for family parties, gatherings, and events.
             Share what really happened with those who were there.
           </p>
@@ -61,7 +61,7 @@ export default function HomePage() {
           <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
             <div className="text-4xl mb-4">🍽️</div>
             <h3 className="text-xl font-bold text-gray-900 mb-3">Rate the Chaos</h3>
-            <p className="text-gray-600">
+            <p className="text-gray-700">
               Food quality, drama levels, alcohol availability, and conversation topics.
               The categories that actually matter.
             </p>
@@ -71,7 +71,7 @@ export default function HomePage() {
           <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
             <div className="text-4xl mb-4">💬</div>
             <h3 className="text-xl font-bold text-gray-900 mb-3">Live Event Feed</h3>
-            <p className="text-gray-600">
+            <p className="text-gray-700">
               Share photos and comments while the party's happening.
               Real-time commentary on the unfolding madness.
             </p>
@@ -81,7 +81,7 @@ export default function HomePage() {
           <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
             <div className="text-4xl mb-4">🎭</div>
             <h3 className="text-xl font-bold text-gray-900 mb-3">Stay Anonymous</h3>
-            <p className="text-gray-600">
+            <p className="text-gray-700">
               Choose your pseudonym. Review honestly.
               What happens at Thanksgiving stays at Thanksgiving... sort of.
             </p>
@@ -100,7 +100,7 @@ export default function HomePage() {
                 <span className="text-2xl font-bold text-blue-600">1</span>
               </div>
               <h3 className="font-bold text-lg text-gray-900 mb-2">Create Event</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-700">
                 Set up your gathering and invite family members via shareable link
               </p>
             </div>
@@ -111,7 +111,7 @@ export default function HomePage() {
                 <span className="text-2xl font-bold text-purple-600">2</span>
               </div>
               <h3 className="font-bold text-lg text-gray-900 mb-2">Share & Comment</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-700">
                 Post photos and reactions in the Live Feed during the event
               </p>
             </div>
@@ -122,7 +122,7 @@ export default function HomePage() {
                 <span className="text-2xl font-bold text-green-600">3</span>
               </div>
               <h3 className="font-bold text-lg text-gray-900 mb-2">Review Honestly</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-700">
                 Rate and review after it's over. The truth shall set you free.
               </p>
             </div>
@@ -148,7 +148,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 py-8 mt-16 sm:mt-20">
-        <div className="max-w-6xl mx-auto px-4 text-center text-gray-600">
+        <div className="max-w-6xl mx-auto px-4 text-center text-gray-700">
           <p className="mb-2">🎉 Yamily - Honest reviews for family gatherings</p>
           <p className="text-sm">
             Because every family dinner deserves a rating.

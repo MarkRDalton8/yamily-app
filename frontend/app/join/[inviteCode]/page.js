@@ -232,7 +232,7 @@ export default function JoinEvent() {
       <div className="min-h-screen bg-gray-50">
         <Navbar />
         <div className="flex items-center justify-center py-16">
-          <p className="text-gray-600">Loading event...</p>
+          <p className="text-gray-700">Loading event...</p>
         </div>
       </div>
     )
@@ -265,7 +265,7 @@ export default function JoinEvent() {
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h1 className="text-3xl font-bold mb-2">🎉 You're Invited!</h1>
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">{event.title}</h2>
-          <p className="text-gray-600 mb-4">{event.description}</p>
+          <p className="text-gray-700 mb-4">{event.description}</p>
           <p className="text-gray-700 mb-2">
             <span className="font-semibold">When:</span> {new Date(event.event_date).toLocaleString()}
           </p>
@@ -282,7 +282,7 @@ export default function JoinEvent() {
                 {event.joined_guests.map((guest, idx) => (
                   <p key={`joined-${idx}`} className="text-green-600 flex items-center">
                     <span className="mr-2">✅</span>
-                    <span>{guest.name} <span className="text-gray-500 text-sm">(joined as "{guest.display_name}")</span></span>
+                    <span>{guest.name} <span className="text-gray-700 text-sm">(joined as "{guest.display_name}")</span></span>
                   </p>
                 ))}
 
@@ -291,7 +291,7 @@ export default function JoinEvent() {
                   const hasJoined = event.joined_guests.some(g => g.name === name)
                   if (!hasJoined) {
                     return (
-                      <p key={`expected-${idx}`} className="text-gray-500 flex items-center">
+                      <p key={`expected-${idx}`} className="text-gray-700 flex items-center">
                         <span className="mr-2">⏳</span>
                         <span>{name} <span className="text-sm">(not joined yet)</span></span>
                       </p>
@@ -312,7 +312,7 @@ export default function JoinEvent() {
               Join This Event
             </h3>
 
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-700 mb-4">
               You're logged in as <span className="font-semibold">{currentUser?.name || 'User'}</span>
             </p>
 
@@ -334,7 +334,7 @@ export default function JoinEvent() {
                 placeholder="e.g., Wine Aunt, Uncle Chaos"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               />
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-sm text-gray-700 mt-2">
                 This is how you'll appear in reviews and comments (anonymous)
               </p>
             </div>
@@ -431,7 +431,7 @@ export default function JoinEvent() {
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="e.g., Uncle Chaos, Wine Aunt, The Critic"
                 />
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-gray-700 mt-1">
                   This is how you'll appear in reviews - get creative!
                 </p>
               </div>

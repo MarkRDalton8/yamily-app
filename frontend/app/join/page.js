@@ -19,10 +19,10 @@ export default function JoinPage() {
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 py-16 text-center">
         <h1 className="text-3xl font-bold text-black mb-4">Join an Event</h1>
-        <p className="text-gray-600 mb-4 text-lg">
+        <p className="text-gray-700 mb-4 text-lg">
           To join an event, you need a shareable invite link from the host.
         </p>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-700 mb-6">
           The link looks like: <code className="bg-gray-200 px-2 py-1 rounded">yamily.app/join/X7K9M2A4</code>
         </p>
         <div className="bg-blue-50 border border-blue-200 p-6 rounded-lg mb-6">
@@ -40,7 +40,7 @@ export default function JoinPage() {
           <h3 className="text-lg font-semibold text-black mb-4">
             Already have an invite code?
           </h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-700 mb-4">
             Enter your invite code below to join the event directly.
           </p>
 

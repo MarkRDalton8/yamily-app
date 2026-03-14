@@ -429,7 +429,7 @@ export default function EventDetail() {
       <div className="min-h-screen bg-gray-50">
         <Navbar />
         <div className="max-w-4xl mx-auto py-12 px-4 text-center">
-          <p className="text-gray-600">Loading event...</p>
+          <p className="text-gray-700">Loading event...</p>
         </div>
       </div>
     )
@@ -476,7 +476,7 @@ export default function EventDetail() {
                      eventStatus === 'live' ? 'Event is LIVE!' :
                      'Event Ended'}
                   </div>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-700">
                     {eventStatus === 'upcoming' ? 'Waiting for host to start' :
                      eventStatus === 'live' ? 'Live Feed is active!' :
                      'Reviews are now open'}
@@ -508,7 +508,7 @@ export default function EventDetail() {
                   )}
 
                   {eventStatus === 'ended' && (
-                    <div className="text-sm text-gray-600 italic">
+                    <div className="text-sm text-gray-700 italic">
                       Event has ended
                     </div>
                   )}
@@ -552,7 +552,7 @@ export default function EventDetail() {
               {/* Stats Badge */}
               <div className="bg-white rounded-lg p-4 text-center min-w-[120px] shadow-lg">
                 <div className="text-3xl font-bold text-gray-800">{guests.length}</div>
-                <div className="text-sm text-gray-600 font-medium">
+                <div className="text-sm text-gray-700 font-medium">
                   {guests.length === 1 ? 'Guest' : 'Guests'}
                 </div>
               </div>
@@ -565,20 +565,26 @@ export default function EventDetail() {
               </div>
             )}
 
-            {/* Quick Stats Row */}
+            {/* Quick Stats Row - Clickable */}
             <div className="flex gap-6 mt-6 pt-6 border-t border-white border-opacity-20 text-white">
-              <div className="flex items-center gap-2">
+              <button
+                onClick={() => setActiveTab('reviews')}
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+              >
                 <span className="text-2xl">⭐</span>
                 <span className="text-lg font-medium">
-                  <span className="font-bold">{event.review_count || 0}</span> Reviews
+                  <span className="font-bold">{event.review_count || 0}</span> {(event.review_count || 0) === 1 ? 'Review' : 'Reviews'}
                 </span>
-              </div>
-              <div className="flex items-center gap-2">
+              </button>
+              <button
+                onClick={() => setActiveTab('feed')}
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+              >
                 <span className="text-2xl">💬</span>
                 <span className="text-lg font-medium">
-                  <span className="font-bold">{event.comment_count || 0}</span> Comments
+                  <span className="font-bold">{event.comment_count || 0}</span> {(event.comment_count || 0) === 1 ? 'Comment' : 'Comments'}
                 </span>
-              </div>
+              </button>
             </div>
           </div>
         )}
@@ -620,7 +626,7 @@ export default function EventDetail() {
               className={`flex-1 px-6 py-4 font-semibold text-lg transition-all ${
                 activeTab === 'reviews'
                   ? 'border-b-4 border-blue-600 text-blue-600 bg-blue-50'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  : 'text-gray-700 hover:text-gray-800 hover:bg-gray-50'
               }`}
             >
               <div className="flex items-center justify-center gap-2">
@@ -639,7 +645,7 @@ export default function EventDetail() {
                 className={`flex-1 px-6 py-4 font-semibold text-lg transition-all ${
                   activeTab === 'feed'
                     ? 'border-b-4 border-purple-600 text-purple-600 bg-purple-50'
-                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                    : 'text-gray-700 hover:text-gray-800 hover:bg-gray-50'
                 }`}
               >
                 <div className="flex items-center justify-center gap-2">
@@ -665,7 +671,7 @@ export default function EventDetail() {
                   <h3 className="text-xl font-bold text-gray-800 mb-2">
                     Share Your Experience
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-gray-700">
                     The event has ended! How was it? Leave your honest review.
                   </p>
                 </div>
@@ -685,7 +691,7 @@ export default function EventDetail() {
               <p className="text-gray-700 text-lg mb-2">
                 📅 Reviews open when the event ends
               </p>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-700 text-sm">
                 Hang tight. The honest opinions come later.
               </p>
             </div>
@@ -696,7 +702,7 @@ export default function EventDetail() {
               <p className="text-gray-700 text-lg mb-2">
                 🎉 Event is live!
               </p>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-700 text-sm">
                 Reviews unlock when the host ends the event. For now, head to the Live Feed.
               </p>
             </div>
@@ -706,7 +712,7 @@ export default function EventDetail() {
             <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg mb-6">
               <div className="text-6xl mb-4">⭐</div>
               <p className="text-gray-700 text-lg mb-2">No reviews yet</p>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-700 text-sm">
                 Be the first to share the truth. We promise it's anonymous.
               </p>
             </div>
@@ -729,7 +735,7 @@ export default function EventDetail() {
                         <span className="font-bold text-gray-900 text-lg">
                           {review.display_name || 'Anonymous'}
                         </span>
-                        <span className="text-gray-500 text-sm ml-3">
+                        <span className="text-gray-700 text-sm ml-3">
                           {new Date(review.created_at).toLocaleDateString()}
                         </span>
                       </div>
@@ -746,28 +752,28 @@ export default function EventDetail() {
                 {/* Category Ratings with Colors */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg p-3">
-                    <div className="text-sm text-gray-600 mb-1">Food Quality</div>
+                    <div className="text-sm text-gray-700 mb-1">Food Quality</div>
                     <div className="text-2xl">
                       {renderStars(review.food_quality)}
                     </div>
                   </div>
 
                   <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-lg p-3">
-                    <div className="text-sm text-gray-600 mb-1">Drama Level</div>
+                    <div className="text-sm text-gray-700 mb-1">Drama Level</div>
                     <div className="text-2xl">
                       {renderStars(review.drama_level)}
                     </div>
                   </div>
 
                   <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-3">
-                    <div className="text-sm text-gray-600 mb-1">Alcohol</div>
+                    <div className="text-sm text-gray-700 mb-1">Alcohol</div>
                     <div className="text-2xl">
                       {renderStars(review.alcohol_availability)}
                     </div>
                   </div>
 
                   <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-lg p-3">
-                    <div className="text-sm text-gray-600 mb-1">Conversation</div>
+                    <div className="text-sm text-gray-700 mb-1">Conversation</div>
                     <div className="text-2xl">
                       {renderStars(review.conversation_topics)}
                     </div>
@@ -842,7 +848,7 @@ export default function EventDetail() {
                 <p className="text-gray-700 text-lg mb-2">
                   🔒 Live Feed opens when the event starts
                 </p>
-                <p className="text-gray-600 text-sm">
+                <p className="text-gray-700 text-sm">
                   The host will start the event when everyone arrives!
                 </p>
               </div>
@@ -915,7 +921,7 @@ export default function EventDetail() {
               </form>
             ) : (
               <div className="bg-white rounded-lg shadow-md p-6 mb-6 text-center">
-                <p className="text-gray-600">
+                <p className="text-gray-700">
                   <a href="/login" className="text-blue-600 hover:underline">Login</a> to join the conversation
                 </p>
               </div>
@@ -923,11 +929,11 @@ export default function EventDetail() {
 
             {/* Enhanced comments feed */}
             {loadingComments ? (
-              <div className="text-center py-8 text-gray-600">Loading feed...</div>
+              <div className="text-center py-8 text-gray-700">Loading feed...</div>
             ) : comments.length === 0 ? (
               <div className="text-center py-12 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg">
                 <p className="text-gray-700 text-lg mb-2">No comments yet</p>
-                <p className="text-gray-600 text-sm">
+                <p className="text-gray-700 text-sm">
                   Be the first to document the madness. Share a photo, drop a comment.
                 </p>
               </div>
@@ -945,7 +951,7 @@ export default function EventDetail() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 flex-wrap">
                           <span className="font-bold text-gray-900">{comment.commenter_name}</span>
-                          <span className="text-gray-500 text-xs">
+                          <span className="text-gray-700 text-xs">
                             {formatTimestamp(comment.created_at)}
                           </span>
                         </div>

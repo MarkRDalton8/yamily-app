@@ -134,7 +134,7 @@ export default function MyEvents() {
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">My Events</h1>
-          <p className="text-gray-600">
+          <p className="text-gray-700">
             {userType === 'host'
               ? "Events you're hosting and events you've joined"
               : "Events you've joined"}
@@ -151,7 +151,7 @@ export default function MyEvents() {
         {/* Loading state */}
         {loading ? (
           <div className="text-center py-12">
-            <p className="text-gray-600">Loading your events...</p>
+            <p className="text-gray-700">Loading your events...</p>
           </div>
         ) : (
           <>
@@ -174,7 +174,7 @@ export default function MyEvents() {
               {hostedEvents.length === 0 ? (
                 <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg p-8 text-center">
                   <p className="text-gray-700 text-lg mb-2">No events hosted yet</p>
-                  <p className="text-gray-600 text-sm mb-4">
+                  <p className="text-gray-700 text-sm mb-4">
                     Ready to subject your family to honest reviews? Create your first event.
                   </p>
                   <a href="/events"
@@ -202,7 +202,7 @@ export default function MyEvents() {
                       </div>
 
                       {/* Event date */}
-                      <p className="text-gray-600 mb-2 flex items-center gap-2">
+                      <p className="text-gray-700 mb-2 flex items-center gap-2">
                         <span>📅</span>
                         <span>{new Date(event.event_date).toLocaleString()}</span>
                       </p>
@@ -216,7 +216,7 @@ export default function MyEvents() {
                       <div className="mb-4 bg-gray-50 rounded-lg p-3 space-y-3" onClick={(e) => e.stopPropagation()}>
                         {/* Invite Code */}
                         <div>
-                          <p className="text-xs text-gray-600 mb-2 font-medium">Invite Code:</p>
+                          <p className="text-xs text-gray-700 mb-2 font-medium">Invite Code:</p>
                           <div className="flex gap-2">
                             <input
                               type="text"
@@ -236,7 +236,7 @@ export default function MyEvents() {
 
                         {/* Shareable Link */}
                         <div>
-                          <p className="text-xs text-gray-600 mb-2 font-medium">Shareable Link:</p>
+                          <p className="text-xs text-gray-700 mb-2 font-medium">Shareable Link:</p>
                           <div className="flex gap-2">
                             <input
                               type="text"
@@ -288,7 +288,7 @@ export default function MyEvents() {
               {joinedEvents.length === 0 ? (
                 <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-8 text-center">
                   <p className="text-gray-700 text-lg mb-2">No events joined yet</p>
-                  <p className="text-gray-600 text-sm">
+                  <p className="text-gray-700 text-sm">
                     Waiting for an invite link? Check your messages, or maybe it got lost in the family group chat.
                   </p>
                 </div>
@@ -311,7 +311,7 @@ export default function MyEvents() {
                       </div>
 
                       {/* Event date */}
-                      <p className="text-gray-600 mb-2 flex items-center gap-2">
+                      <p className="text-gray-700 mb-2 flex items-center gap-2">
                         <span>📅</span>
                         <span>{new Date(event.event_date).toLocaleString()}</span>
                       </p>
@@ -322,7 +322,7 @@ export default function MyEvents() {
                       )}
 
                       {/* Stats */}
-                      <div className="flex gap-4 text-sm text-gray-500 mb-4 pb-4 border-b">
+                      <div className="flex gap-4 text-sm text-gray-700 mb-4 pb-4 border-b">
                         <span className="flex items-center gap-1">
                           <span>💬</span>
                           <span>Check live feed</span>

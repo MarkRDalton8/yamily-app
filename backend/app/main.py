@@ -207,6 +207,7 @@ def get_event_detail(
         "guests": [
             {
                 "id": guest.id,
+                "user_id": guest.user_id,
                 "display_name": guest.display_name,
                 "joined_at": guest.joined_at
             }
