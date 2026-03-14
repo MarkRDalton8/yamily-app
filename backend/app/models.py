@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, JSON, UniqueConstraint, Enum
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, JSON, UniqueConstraint, Enum, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from app.database import Base
@@ -23,6 +23,22 @@ class User(Base):
     # Relationships
     hosted_events = relationship("Event", back_populates="host")
     reviews = relationship("Review", back_populates="reviewer")
+    feedback = relationship("Feedback", back_populates="user")
+
+class Feedback(Base):
+    __tablename__ = "feedback"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # Null if anonymous
+    feedback_type = Column(String)  # feature, bug, improvement, other
+    message = Column(Text)
+    name = Column(String, nullable=True)
+    email = Column(String, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    status = Column(String, default="new")  # new, reviewed, resolved
+
+    # Relationship to User
+    user = relationship("User", back_populates="feedback")
 
 class Event(Base):
     __tablename__ = "events"

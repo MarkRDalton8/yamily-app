@@ -5,11 +5,12 @@ load_dotenv()
 
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from app.database import engine, get_db
 from app import models, schemas, auth
-from app.auth import get_current_user
+from app.auth import get_current_user, oauth2_scheme, SECRET_KEY, ALGORITHM
 from fastapi.middleware.cors import CORSMiddleware
+from jose import jwt
 
 # Create the database tables
 models.Base.metadata.create_all(bind=engine)
@@ -27,6 +28,26 @@ app.add_middleware(
     allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
     allow_headers=["*"],  # Allow all headers
 )
+
+
+def get_current_user_optional(
+    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme)
+) -> Optional[models.User]:
+    """
+    Get current user if logged in, otherwise return None.
+    Allows anonymous users to submit feedback.
+    """
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            return None
+        user = db.query(models.User).filter(models.User.email == email).first()
+        return user
+    except:
+        return None
+
 
 @app.get("/")
 def root():
@@ -879,3 +900,50 @@ def delete_comment(
     db.commit()
 
     return {"message": "Comment deleted"}
+
+# ============================================================
+# FEEDBACK ENDPOINTS
+# ============================================================
+
+@app.post("/feedback", response_model=schemas.FeedbackResponse)
+def submit_feedback(
+    feedback: schemas.FeedbackCreate,
+    db: Session = Depends(get_db),
+    current_user: Optional[models.User] = Depends(get_current_user_optional)
+):
+    """
+    Submit user feedback.
+    Can be called by logged-in users or anonymous users.
+    """
+    
+    # Create feedback entry
+    new_feedback = models.Feedback(
+        user_id=current_user.id if current_user else None,
+        feedback_type=feedback.feedback_type,
+        message=feedback.message,
+        name=feedback.name if feedback.name else (current_user.name if current_user else "Anonymous"),
+        email=feedback.email if feedback.email else (current_user.email if current_user else None),
+        status="new"
+    )
+    
+    db.add(new_feedback)
+    db.commit()
+    db.refresh(new_feedback)
+    
+    return new_feedback
+
+
+@app.get("/admin/feedback")
+def get_all_feedback(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Get all feedback submissions.
+    For now, any logged-in user can view. Add admin check later if needed.
+    """
+    feedback_list = db.query(models.Feedback).order_by(
+        models.Feedback.created_at.desc()
+    ).all()
+    
+    return feedback_list

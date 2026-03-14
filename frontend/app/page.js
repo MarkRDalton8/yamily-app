@@ -1,8 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
+import FeedbackModal from './components/FeedbackModal'
 
 export default function HomePage() {
+  const [showFeedback, setShowFeedback] = useState(false)
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
       {/* Navigation Bar */}
@@ -17,6 +20,12 @@ export default function HomePage() {
 
             {/* Auth Buttons */}
             <div className="flex gap-3">
+              <button
+                onClick={() => setShowFeedback(true)}
+                className="px-4 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors flex items-center gap-2"
+              >
+                💬 Feedback
+              </button>
               <Link
                 href="/login"
                 className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors"
@@ -155,6 +164,12 @@ export default function HomePage() {
           </p>
         </div>
       </footer>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={showFeedback}
+        onClose={() => setShowFeedback(false)}
+      />
     </div>
   )
 }

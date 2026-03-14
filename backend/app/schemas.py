@@ -154,3 +154,24 @@ class CommentResponse(BaseModel):
 
 class CommentVoteCreate(BaseModel):
     vote_type: int  # 1 or -1
+
+
+# Feedback Schemas
+class FeedbackCreate(BaseModel):
+    feedback_type: str  # feature, bug, improvement, other
+    message: str
+    name: Optional[str] = "Anonymous"
+    email: Optional[str] = None
+
+class FeedbackResponse(BaseModel):
+    id: int
+    user_id: Optional[int]
+    feedback_type: str
+    message: str
+    name: Optional[str]
+    email: Optional[str]
+    created_at: datetime
+    status: str
+
+    class Config:
+        from_attributes = True
