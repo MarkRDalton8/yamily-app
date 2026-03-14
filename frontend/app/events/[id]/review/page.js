@@ -13,44 +13,84 @@ export default function SubmitReview() {
   
   // STATE - Track if user is logged in
   const [user, setUser] = useState(null)
-  
+
+  // STATE - Track event details and categories
+  const [event, setEvent] = useState(null)
+  const [categories, setCategories] = useState([])
+
   // STATE - Track form inputs (all the ratings and review text)
   const [formData, setFormData] = useState({
-    food_quality: 3,
-    drama_level: 3,
-    alcohol_availability: 3,
-    conversation_topics: 3,
+    ratings: {}, // Dynamic ratings based on event categories
     review_text: '',
     memorable_moments: '',
     tags: []
   })
-  
+
   // STATE - Track tag input (what user is typing)
   const [tagInput, setTagInput] = useState('')
-  
+
   // STATE - Track if review was submitted successfully
   const [submitted, setSubmitted] = useState(false)
-  
+
   // STATE - Track errors
   const [error, setError] = useState('')
-  
+
   // STATE - Track loading state
   const [loading, setLoading] = useState(false)
+  const [loadingEvent, setLoadingEvent] = useState(true)
 
   // EFFECT - Check if user is logged in when page loads
   useEffect(() => {
     const storedUser = localStorage.getItem('user')
     const token = localStorage.getItem('token')
-    
+
     // If not logged in, redirect to login page
     if (!storedUser || !token) {
       router.push('/login')
       return
     }
-    
+
     // Parse and store user info
     setUser(JSON.parse(storedUser))
-  }, [router])
+
+    // Fetch event details and categories
+    fetchEventDetails(token)
+  }, [router, eventId])
+
+  // FUNCTION - Fetch event details to get custom categories
+  const fetchEventDetails = async (token) => {
+    try {
+      setLoadingEvent(true)
+      const response = await fetch(`${API_URL}/events/${eventId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to load event details')
+      }
+
+      const data = await response.json()
+      setEvent(data)
+      setCategories(data.categories || [])
+
+      // Initialize ratings with default value of 3 for each category
+      const initialRatings = {}
+      data.categories.forEach(cat => {
+        initialRatings[cat.category_name] = 3
+      })
+      setFormData(prev => ({
+        ...prev,
+        ratings: initialRatings
+      }))
+
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoadingEvent(false)
+    }
+  }
 
   // FUNCTION - Add a tag to the list
   const addTag = () => {
@@ -115,6 +155,18 @@ export default function SubmitReview() {
     return null
   }
 
+  // If still loading event details, show loading state
+  if (loadingEvent) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="max-w-3xl mx-auto py-12 px-4 text-center">
+          <p className="text-gray-600">Loading event details...</p>
+        </div>
+      </div>
+    )
+  }
+
   // If review submitted, show success message
   if (submitted) {
     return (
@@ -157,86 +209,37 @@ export default function SubmitReview() {
         {/* Review Form */}
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-8">
           
-          {/* RATINGS SECTION */}
+          {/* RATINGS SECTION - Dynamic based on event categories */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-4">Ratings</h2>
             <p className="text-sm text-gray-600 mb-6">Rate each category from 1 (terrible) to 5 (amazing)</p>
-            
-            {/* Food Quality */}
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">
-                Food Quality: {formData.food_quality} ⭐
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="5"
-                value={formData.food_quality}
-                onChange={(e) => setFormData({...formData, food_quality: parseInt(e.target.value)})}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>1 - Terrible</span>
-                <span>5 - Amazing</span>
-              </div>
-            </div>
 
-            {/* Drama Level */}
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">
-                Drama Level: {formData.drama_level} 🎭
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="5"
-                value={formData.drama_level}
-                onChange={(e) => setFormData({...formData, drama_level: parseInt(e.target.value)})}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>1 - Peaceful</span>
-                <span>5 - Explosive</span>
+            {categories.map((category) => (
+              <div key={category.id} className="mb-4">
+                <label className="block text-gray-700 mb-2">
+                  {category.category_emoji && `${category.category_emoji} `}
+                  {category.category_name}: {formData.ratings[category.category_name] || 3} ⭐
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={formData.ratings[category.category_name] || 3}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    ratings: {
+                      ...formData.ratings,
+                      [category.category_name]: parseInt(e.target.value)
+                    }
+                  })}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>1 - Terrible</span>
+                  <span>5 - Amazing</span>
+                </div>
               </div>
-            </div>
-
-            {/* Alcohol Availability */}
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">
-                Alcohol Availability: {formData.alcohol_availability} 🍷
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="5"
-                value={formData.alcohol_availability}
-                onChange={(e) => setFormData({...formData, alcohol_availability: parseInt(e.target.value)})}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>1 - Dry Event</span>
-                <span>5 - Open Bar</span>
-              </div>
-            </div>
-
-            {/* Conversation Topics */}
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">
-                Conversation Topics: {formData.conversation_topics} 💬
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="5"
-                value={formData.conversation_topics}
-                onChange={(e) => setFormData({...formData, conversation_topics: parseInt(e.target.value)})}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>1 - Awkward Silence</span>
-                <span>5 - Engaging</span>
-              </div>
-            </div>
+            ))}
           </div>
 
           {/* REVIEW TEXT */}

@@ -60,11 +60,10 @@ export default function EventSummaryPage() {
     )
   }
 
-  // Calculate average ratings
-  const avgFood = summary.avg_ratings.food || 0
-  const avgDrama = summary.avg_ratings.drama || 0
-  const avgAlcohol = summary.avg_ratings.alcohol || 0
-  const avgConversation = summary.avg_ratings.conversation || 0
+  // Get categories with their colors for display
+  const categoryColors = [
+    'blue', 'purple', 'green', 'orange', 'pink', 'indigo', 'red', 'yellow'
+  ]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
@@ -135,72 +134,38 @@ export default function EventSummaryPage() {
           </div>
         </div>
 
-        {/* Average Ratings */}
-        {summary.total_reviews > 0 && (
+        {/* Average Ratings - Dynamic based on event categories */}
+        {summary.total_reviews > 0 && summary.avg_ratings && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
               Overall Ratings
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-700 font-medium">🍽️ Food</span>
-                  <span className="text-gray-900 font-bold">
-                    {avgFood.toFixed(1)} / 5
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div
-                    className="bg-blue-600 h-3 rounded-full"
-                    style={{ width: `${(avgFood / 5) * 100}%` }}
-                  />
-                </div>
-              </div>
+              {Object.entries(summary.avg_ratings).map(([categoryName, avgValue], index) => {
+                const color = categoryColors[index % categoryColors.length]
+                // Find the category emoji from event categories
+                const category = event.categories?.find(c => c.category_name === categoryName)
+                const emoji = category?.category_emoji || '⭐'
 
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-700 font-medium">🎭 Drama</span>
-                  <span className="text-gray-900 font-bold">
-                    {avgDrama.toFixed(1)} / 5
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div
-                    className="bg-purple-600 h-3 rounded-full"
-                    style={{ width: `${(avgDrama / 5) * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-700 font-medium">🍷 Alcohol</span>
-                  <span className="text-gray-900 font-bold">
-                    {avgAlcohol.toFixed(1)} / 5
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div
-                    className="bg-green-600 h-3 rounded-full"
-                    style={{ width: `${(avgAlcohol / 5) * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-700 font-medium">💬 Conversation</span>
-                  <span className="text-gray-900 font-bold">
-                    {avgConversation.toFixed(1)} / 5
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div
-                    className="bg-orange-600 h-3 rounded-full"
-                    style={{ width: `${(avgConversation / 5) * 100}%` }}
-                  />
-                </div>
-              </div>
+                return (
+                  <div key={categoryName}>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-gray-700 font-medium">
+                        {emoji} {categoryName}
+                      </span>
+                      <span className="text-gray-900 font-bold">
+                        {avgValue.toFixed(1)} / 5
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div
+                        className={`bg-${color}-600 h-3 rounded-full`}
+                        style={{ width: `${(avgValue / 5) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
@@ -248,31 +213,19 @@ export default function EventSummaryPage() {
                     </div>
                   </div>
 
+                  {/* Dynamic ratings based on event categories */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-                    <div className="text-center py-2 bg-blue-50 rounded">
-                      <div className="text-xs text-gray-600 mb-1">Food</div>
-                      <div className="font-bold text-blue-600">
-                        {'⭐'.repeat(review.food_rating)}
-                      </div>
-                    </div>
-                    <div className="text-center py-2 bg-purple-50 rounded">
-                      <div className="text-xs text-gray-600 mb-1">Drama</div>
-                      <div className="font-bold text-purple-600">
-                        {'⭐'.repeat(review.drama_rating)}
-                      </div>
-                    </div>
-                    <div className="text-center py-2 bg-green-50 rounded">
-                      <div className="text-xs text-gray-600 mb-1">Alcohol</div>
-                      <div className="font-bold text-green-600">
-                        {'⭐'.repeat(review.alcohol_rating)}
-                      </div>
-                    </div>
-                    <div className="text-center py-2 bg-orange-50 rounded">
-                      <div className="text-xs text-gray-600 mb-1">Conversation</div>
-                      <div className="font-bold text-orange-600">
-                        {'⭐'.repeat(review.conversation_rating)}
-                      </div>
-                    </div>
+                    {review.ratings && Object.entries(review.ratings).map(([categoryName, rating], index) => {
+                      const color = categoryColors[index % categoryColors.length]
+                      return (
+                        <div key={categoryName} className={`text-center py-2 bg-${color}-50 rounded`}>
+                          <div className="text-xs text-gray-600 mb-1">{categoryName}</div>
+                          <div className={`font-bold text-${color}-600`}>
+                            {'⭐'.repeat(rating)}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
 
                   {review.memorable_moment && (

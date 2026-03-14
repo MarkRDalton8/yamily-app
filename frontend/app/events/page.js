@@ -17,11 +17,21 @@ export default function Events() {
     title: '',
     description: '',
     event_date: '',
-    expected_guests: []
+    expected_guests: [],
+    categories: [
+      { category_name: 'Food', category_emoji: '🍽️', display_order: 0 },
+      { category_name: 'Drama', category_emoji: '🎭', display_order: 1 },
+      { category_name: 'Alcohol', category_emoji: '🍷', display_order: 2 },
+      { category_name: 'Conversation', category_emoji: '💬', display_order: 3 }
+    ]
   })
 
   // STATE - Track guest input field
   const [guestInput, setGuestInput] = useState('')
+
+  // STATE - Track new category inputs
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [newCategoryEmoji, setNewCategoryEmoji] = useState('')
   
   // STATE - Track created event (to show invite code)
   const [createdEvent, setCreatedEvent] = useState(null)
@@ -74,15 +84,23 @@ export default function Events() {
       // Success! Get the created event with invite code
       const event = await response.json()
       setCreatedEvent(event)
-      
+
       // Clear the form
       setFormData({
         title: '',
         description: '',
         event_date: '',
-        expected_guests: []
+        expected_guests: [],
+        categories: [
+          { category_name: 'Food', category_emoji: '🍽️', display_order: 0 },
+          { category_name: 'Drama', category_emoji: '🎭', display_order: 1 },
+          { category_name: 'Alcohol', category_emoji: '🍷', display_order: 2 },
+          { category_name: 'Conversation', category_emoji: '💬', display_order: 3 }
+        ]
       })
       setGuestInput('')
+      setNewCategoryName('')
+      setNewCategoryEmoji('')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -115,6 +133,64 @@ export default function Events() {
       e.preventDefault()
       handleAddGuest()
     }
+  }
+
+  // FUNCTION - Add custom category
+  const handleAddCategory = () => {
+    if (newCategoryName.trim() && formData.categories.length < 8) {
+      setFormData({
+        ...formData,
+        categories: [
+          ...formData.categories,
+          {
+            category_name: newCategoryName.trim(),
+            category_emoji: newCategoryEmoji.trim() || '⭐',
+            display_order: formData.categories.length
+          }
+        ]
+      })
+      setNewCategoryName('')
+      setNewCategoryEmoji('')
+    }
+  }
+
+  // FUNCTION - Remove category
+  const handleRemoveCategory = (index) => {
+    if (formData.categories.length > 2) {
+      setFormData({
+        ...formData,
+        categories: formData.categories
+          .filter((_, i) => i !== index)
+          .map((cat, i) => ({ ...cat, display_order: i }))
+      })
+    }
+  }
+
+  // FUNCTION - Update category name
+  const handleUpdateCategoryName = (index, newName) => {
+    const updated = [...formData.categories]
+    updated[index] = { ...updated[index], category_name: newName }
+    setFormData({ ...formData, categories: updated })
+  }
+
+  // FUNCTION - Update category emoji
+  const handleUpdateCategoryEmoji = (index, newEmoji) => {
+    const updated = [...formData.categories]
+    updated[index] = { ...updated[index], category_emoji: newEmoji }
+    setFormData({ ...formData, categories: updated })
+  }
+
+  // FUNCTION - Reset to default categories
+  const handleResetCategories = () => {
+    setFormData({
+      ...formData,
+      categories: [
+        { category_name: 'Food', category_emoji: '🍽️', display_order: 0 },
+        { category_name: 'Drama', category_emoji: '🎭', display_order: 1 },
+        { category_name: 'Alcohol', category_emoji: '🍷', display_order: 2 },
+        { category_name: 'Conversation', category_emoji: '💬', display_order: 3 }
+      ]
+    })
   }
 
   // If not logged in yet, show nothing (will redirect)
@@ -262,6 +338,93 @@ export default function Events() {
                     </span>
                   ))}
                 </div>
+              )}
+            </div>
+
+            {/* Rating Categories Section */}
+            <div className="mb-6 pb-6 border-b">
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-gray-900 font-semibold">Rating Categories</label>
+                <button
+                  type="button"
+                  onClick={handleResetCategories}
+                  className="text-xs text-blue-600 hover:text-blue-800 underline"
+                >
+                  Reset to Defaults
+                </button>
+              </div>
+              <p className="text-sm text-gray-700 mb-4">
+                Customize what guests rate (2-8 categories). Perfect for game nights, weddings, sports parties, etc.
+              </p>
+
+              {/* Current Categories */}
+              <div className="space-y-2 mb-4">
+                {formData.categories.map((cat, index) => (
+                  <div key={index} className="flex gap-2 items-center bg-gray-50 p-3 rounded-lg">
+                    <input
+                      type="text"
+                      value={cat.category_emoji}
+                      onChange={(e) => handleUpdateCategoryEmoji(index, e.target.value)}
+                      placeholder="emoji"
+                      className="w-16 px-2 py-2 border rounded text-center text-gray-900"
+                      maxLength={2}
+                    />
+                    <input
+                      type="text"
+                      value={cat.category_name}
+                      onChange={(e) => handleUpdateCategoryName(index, e.target.value)}
+                      placeholder="Category name"
+                      className="flex-1 px-3 py-2 border rounded text-gray-900"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveCategory(index)}
+                      disabled={formData.categories.length <= 2}
+                      className={`px-3 py-2 rounded font-bold ${
+                        formData.categories.length <= 2
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                          : 'bg-red-100 text-red-600 hover:bg-red-200'
+                      }`}
+                      title={formData.categories.length <= 2 ? 'Minimum 2 categories required' : 'Remove category'}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add New Category */}
+              {formData.categories.length < 8 && (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newCategoryEmoji}
+                    onChange={(e) => setNewCategoryEmoji(e.target.value)}
+                    placeholder="emoji"
+                    className="w-16 px-2 py-2 border rounded text-center text-gray-900"
+                    maxLength={2}
+                  />
+                  <input
+                    type="text"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Add new category..."
+                    className="flex-1 px-3 py-2 border rounded text-gray-900"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCategory}
+                    disabled={!newCategoryName.trim()}
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 font-semibold"
+                  >
+                    Add
+                  </button>
+                </div>
+              )}
+
+              {formData.categories.length >= 8 && (
+                <p className="text-sm text-gray-600 italic">Maximum 8 categories reached</p>
               )}
             </div>
 
