@@ -452,9 +452,13 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             detail="Incorrect email or password"
         )
     
-    # Create access token
-   access_token = auth.create_access_token(data={"sub": user.email, "user_id": user.id, "name": user.name})
-   
+    # Create access token with 7-day expiration
+   from datetime import timedelta
+   access_token = auth.create_access_token(
+       data={"sub": user.email, "user_id": user.id, "name": user.name},
+       expires_delta=timedelta(days=7)
+   )
+
    return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -650,12 +654,19 @@ def create_comment(
     if comment.photo_url:
         # Check if it's a valid base64 image
         if not comment.photo_url.startswith('data:image/'):
-            raise HTTPException(status_code=400, detail="Invalid image format")
+            raise HTTPException(status_code=400, detail="Invalid image format. Must be data:image/...")
 
-        # Check size (base64 string length roughly = file size * 1.37)
-        # Limit to ~5MB
-        if len(comment.photo_url) > 7000000:  # ~5MB in base64
-            raise HTTPException(status_code=400, detail="Image too large (max 5MB)")
+        # Check size - be more generous (10MB base64 = ~7MB actual)
+        max_size = 10_000_000  # 10MB in chars
+        if len(comment.photo_url) > max_size:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Image too large ({len(comment.photo_url)} chars). Max {max_size} chars (~7MB)"
+            )
+
+        # Validate it's actually a valid data URL
+        if ',' not in comment.photo_url:
+            raise HTTPException(status_code=400, detail="Invalid image data URL format")
 
     # Create comment
     db_comment = models.EventComment(

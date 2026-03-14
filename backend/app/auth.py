@@ -23,7 +23,7 @@ if not SECRET_KEY:
     raise ValueError("JWT_SECRET_KEY environment variable must be set")
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_DAYS = 7  # Token valid for 7 days
 
 def hash_password(password: str) -> str:
     """Hash a password for storing."""
@@ -34,12 +34,13 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    """Create a JWT access token."""
+    """Create a JWT access token with 7-day default expiration."""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        # DEFAULT: 7 days instead of 15 minutes
+        expire = datetime.utcnow() + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt

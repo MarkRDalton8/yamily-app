@@ -48,6 +48,19 @@ export default function EventDetail() {
   const [changingStatus, setChangingStatus] = useState(false)
   const [isHost, setIsHost] = useState(false)
 
+  // FUNCTION - Handle API errors (especially 401 token expiration)
+  const handleApiError = (response) => {
+    if (response.status === 401) {
+      // Token expired - clear and redirect to login
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      alert('Your session expired. Please log in again.')
+      router.push('/login')
+      return true
+    }
+    return false
+  }
+
   // EFFECT - Load event and reviews when page loads
   useEffect(() => {
     const storedUser = localStorage.getItem('user')
@@ -72,6 +85,7 @@ export default function EventDetail() {
       })
 
       if (!eventResponse.ok) {
+        if (handleApiError(eventResponse)) return
         if (eventResponse.status === 404) {
           throw new Error('Event not found')
         }
@@ -122,12 +136,13 @@ export default function EventDetail() {
       })
 
       if (!response.ok) {
+        if (handleApiError(response)) return
         throw new Error('Failed to vote')
       }
 
       // Reload reviews to show updated vote counts
       loadEventAndReviews()
-      
+
     } catch (err) {
       console.error('Vote error:', err)
     }
@@ -138,7 +153,7 @@ export default function EventDetail() {
     return '⭐'.repeat(rating) + '☆'.repeat(5 - rating)
   }
 
-  // FUNCTION - Handle photo selection
+  // FUNCTION - Handle photo selection with compression
   const handlePhotoSelect = (e) => {
     const file = e.target.files[0]
     if (!file) return
@@ -149,18 +164,55 @@ export default function EventDetail() {
       return
     }
 
-    // Validate size (5MB)
+    // Validate size (5MB before compression)
     if (file.size > 5 * 1024 * 1024) {
       alert('Image must be less than 5MB')
       return
     }
 
-    // Convert to base64
+    // Compress and convert to base64
+    compressAndConvertImage(file)
+  }
+
+  // FUNCTION - Compress image before upload
+  const compressAndConvertImage = (file) => {
     const reader = new FileReader()
-    reader.onloadend = () => {
-      const dataUrl = reader.result
-      setSelectedPhoto(dataUrl)
-      setPhotoPreview(dataUrl)
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        // Create canvas for compression
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+
+        // Calculate new dimensions (max 1200px width/height)
+        let width = img.width
+        let height = img.height
+        const maxSize = 1200
+
+        if (width > height && width > maxSize) {
+          height = (height * maxSize) / width
+          width = maxSize
+        } else if (height > maxSize) {
+          width = (width * maxSize) / height
+          height = maxSize
+        }
+
+        canvas.width = width
+        canvas.height = height
+
+        // Draw and compress
+        ctx.drawImage(img, 0, 0, width, height)
+
+        // Convert to base64 (0.7 quality = good compression)
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7)
+
+        console.log('Original size:', file.size, 'bytes')
+        console.log('Compressed size:', compressedDataUrl.length, 'chars')
+
+        setSelectedPhoto(compressedDataUrl)
+        setPhotoPreview(compressedDataUrl)
+      }
+      img.src = e.target.result
     }
     reader.readAsDataURL(file)
   }
@@ -201,6 +253,10 @@ export default function EventDetail() {
         }
       })
 
+      if (!response.ok) {
+        if (handleApiError(response)) return
+      }
+
       if (response.ok) {
         const data = await response.json()
         setComments(data)
@@ -225,6 +281,13 @@ export default function EventDetail() {
     try {
       setPostingComment(true)
       const token = localStorage.getItem('token')
+
+      console.log('Posting comment with photo:', selectedPhoto ? 'YES' : 'NO')
+      if (selectedPhoto) {
+        console.log('Photo size (chars):', selectedPhoto.length)
+        console.log('Photo preview (first 100 chars):', selectedPhoto.substring(0, 100))
+      }
+
       const response = await fetch(`${API_URL}/events/${eventId}/comments`, {
         method: 'POST',
         headers: {
@@ -237,18 +300,23 @@ export default function EventDetail() {
         })
       })
 
-      if (response.ok) {
-        const newCommentData = await response.json()
-        setComments([newCommentData, ...comments]) // Add to top
-        setNewComment('') // Clear input
-        setSelectedPhoto(null)  // Clear photo
-        setPhotoPreview(null)   // Clear preview
-      } else {
+      // Better error handling
+      if (!response.ok) {
+        if (handleApiError(response)) return
         const error = await response.json()
-        alert(error.detail || 'Failed to post comment')
+        console.error('Server error:', error)
+        alert(`Failed to post: ${error.detail || 'Unknown error'}`)
+        return
       }
+
+      const newCommentData = await response.json()
+      setComments([newCommentData, ...comments]) // Add to top
+      setNewComment('') // Clear input
+      setSelectedPhoto(null)  // Clear photo
+      setPhotoPreview(null)   // Clear preview
     } catch (err) {
-      alert('Error posting comment')
+      console.error('Upload error:', err)
+      alert(`Error posting comment: ${err.message}`)
     } finally {
       setPostingComment(false)
     }
@@ -268,6 +336,10 @@ export default function EventDetail() {
           vote_type: voteType
         })
       })
+
+      if (!response.ok) {
+        if (handleApiError(response)) return
+      }
 
       if (response.ok) {
         const data = await response.json()
@@ -298,13 +370,15 @@ export default function EventDetail() {
         }
       })
 
-      if (response.ok) {
-        setEventStatus('live')
-        alert('Event started! The Live Feed is now active. Let the chaos begin. 🎊')
-      } else {
+      if (!response.ok) {
+        if (handleApiError(response)) return
         const error = await response.json()
         alert(error.detail || 'Failed to start event')
+        return
       }
+
+      setEventStatus('live')
+      alert('Event started! The Live Feed is now active. Let the chaos begin. 🎊')
     } catch (err) {
       alert('Error starting event')
     } finally {
@@ -326,13 +400,15 @@ export default function EventDetail() {
         }
       })
 
-      if (response.ok) {
-        setEventStatus('ended')
-        alert('Event ended! Reviews are now open. Time for the truth. ✅')
-      } else {
+      if (!response.ok) {
+        if (handleApiError(response)) return
         const error = await response.json()
         alert(error.detail || 'Failed to end event')
+        return
       }
+
+      setEventStatus('ended')
+      alert('Event ended! Reviews are now open. Time for the truth. ✅')
     } catch (err) {
       alert('Error ending event')
     } finally {

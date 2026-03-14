@@ -88,3 +88,13 @@ Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  ⚠ Unsupported metadata themeColor is configured in metadata export in /_not-found. Please move it to viewport export instead.
 Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
  GET /icon-192.png 404 in 171ms (compile: 73ms, render: 98ms)
+ ✓ Compiled in 673ms
+ ✓ Compiled in 186ms
+ ✓ Compiled in 460ms
+ ✓ Compiled in 408ms
+ ✓ Compiled in 279ms
+ ✓ Compiled in 149ms
+ ✓ Compiled in 567ms
+ ✓ Compiled in 374ms
+ ✓ Compiled in 602ms
+ ✓ Compiled in 440ms
