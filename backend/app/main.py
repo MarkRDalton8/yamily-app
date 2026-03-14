@@ -172,6 +172,34 @@ def create_event(
             )
             db.add(expected_guest)
 
+    # Add categories
+    if event.categories and len(event.categories) > 0:
+        # Use custom categories
+        for cat in event.categories:
+            category = models.EventCategory(
+                event_id=db_event.id,
+                category_name=cat.category_name,
+                category_emoji=cat.category_emoji,
+                display_order=cat.display_order
+            )
+            db.add(category)
+    else:
+        # Use default categories
+        default_categories = [
+            {"name": "Food", "emoji": "🍽️", "order": 0},
+            {"name": "Drama", "emoji": "🎭", "order": 1},
+            {"name": "Alcohol", "emoji": "🍷", "order": 2},
+            {"name": "Conversation", "emoji": "💬", "order": 3}
+        ]
+        for cat in default_categories:
+            category = models.EventCategory(
+                event_id=db_event.id,
+                category_name=cat["name"],
+                category_emoji=cat["emoji"],
+                display_order=cat["order"]
+            )
+            db.add(category)
+
     # Auto-join host to their own event
     host_guest = models.EventGuest(
         event_id=db_event.id,
@@ -222,6 +250,11 @@ def get_event_detail(
     # Get comment count
     comment_count = db.query(models.EventComment).filter(models.EventComment.event_id == event_id).count()
 
+    # Get categories
+    categories = db.query(models.EventCategory).filter(
+        models.EventCategory.event_id == event_id
+    ).order_by(models.EventCategory.display_order).all()
+
     return {
         "id": event.id,
         "title": event.title,
@@ -241,6 +274,15 @@ def get_event_detail(
                 "joined_at": guest.joined_at
             }
             for guest in guests
+        ],
+        "categories": [
+            {
+                "id": cat.id,
+                "category_name": cat.category_name,
+                "category_emoji": cat.category_emoji,
+                "display_order": cat.display_order
+            }
+            for cat in categories
         ],
         "review_count": review_count,
         "comment_count": comment_count,

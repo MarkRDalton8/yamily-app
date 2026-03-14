@@ -36,12 +36,28 @@ class ExpectedGuestResponse(ExpectedGuestBase):
     class Config:
         from_attributes = True
 
+# Category Schemas
+class CategoryCreate(BaseModel):
+    category_name: str
+    category_emoji: Optional[str] = None
+    display_order: int = 0
+
+class CategoryResponse(BaseModel):
+    id: int
+    category_name: str
+    category_emoji: Optional[str]
+    display_order: int
+
+    class Config:
+        from_attributes = True
+
 # Event Schemas
 class EventCreate(BaseModel):
     title: str
     description: Optional[str] = None
     event_date: datetime
     expected_guests: Optional[List[str]] = []  # List of guest names
+    categories: Optional[List[CategoryCreate]] = None  # Custom categories (defaults to standard 4 if None)
 
 class EventResponse(BaseModel):
     id: int
@@ -72,10 +88,7 @@ class EventPreview(BaseModel):
 
 # Review Schemas
 class ReviewCreate(BaseModel):
-    food_quality: int
-    drama_level: int
-    alcohol_availability: int
-    conversation_topics: int
+    ratings: Dict[str, int]  # {"Food": 5, "Drama": 4, "Alcohol": 3}
     review_text: str
     memorable_moments: str
     tags: List[str] = []
@@ -84,11 +97,7 @@ class ReviewResponse(BaseModel):
     id: int
     event_id: int
     user_id: int
-    food_quality: int
-    drama_level: int
-    alcohol_availability: int
-    conversation_topics: int
-    overall_rating: float
+    ratings: Dict[str, int]  # Custom ratings {"Food": 5, "Drama": 4}
     memorable_moments: Optional[str]
     review_text: str
     tags: List[str]

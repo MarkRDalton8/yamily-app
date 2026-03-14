@@ -57,30 +57,39 @@ class Event(Base):
     reviews = relationship("Review", back_populates="event")
     expected_guests = relationship("ExpectedGuest", back_populates="event", cascade="all, delete-orphan")
     comments = relationship("EventComment", back_populates="event", cascade="all, delete-orphan")
+    categories = relationship("EventCategory", back_populates="event", cascade="all, delete-orphan")
+
+class EventCategory(Base):
+    __tablename__ = "event_categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
+    category_name = Column(String, nullable=False)  # e.g., "Food Quality"
+    category_emoji = Column(String, nullable=True)  # e.g., "🍽️"
+    display_order = Column(Integer, default=0)  # For ordering categories
+
+    # Relationship
+    event = relationship("Event", back_populates="categories")
 
 class Review(Base):
     __tablename__ = "reviews"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     event_id = Column(Integer, ForeignKey("events.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
-    
-    # Star ratings (1-5)
-    food_quality = Column(Integer)
-    drama_level = Column(Integer)
-    alcohol_availability = Column(Integer)
-    conversation_topics = Column(Integer)
-    overall_rating = Column(Float)
-    
+
+    # Custom ratings stored as JSON: {"Food": 5, "Drama": 4, "Alcohol": 3}
+    ratings = Column(JSON, nullable=False)
+
     # Memorable moments
     memorable_moments = Column(String)
-    
+
     # Review content
     review_text = Column(String)
     tags = Column(JSON)  # Store tags as JSON array
-    
+
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    
+
     # Relationships
     event = relationship("Event", back_populates="reviews")
     reviewer = relationship("User", back_populates="reviews")
