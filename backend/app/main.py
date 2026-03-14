@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
@@ -32,13 +32,20 @@ app.add_middleware(
 
 
 def get_current_user_optional(
-    db: Session = Depends(get_db),
-    token: str = Depends(oauth2_scheme)
+    request: Request,
+    db: Session = Depends(get_db)
 ) -> Optional[models.User]:
     """
     Get current user if logged in, otherwise return None.
     Allows anonymous users to submit feedback.
     """
+    # Try to get token from Authorization header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return None
+
+    token = auth_header.replace("Bearer ", "")
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
