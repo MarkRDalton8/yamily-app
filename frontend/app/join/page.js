@@ -50,7 +50,7 @@ export default function JoinPage() {
               value={inviteCode}
               onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
               placeholder="Enter code (e.g., X7K9M2A4)"
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-lg text-center sm:text-left text-gray-900"
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-lg text-center sm:text-left text-gray-900 placeholder:text-gray-900"
               maxLength={8}
             />
             <button

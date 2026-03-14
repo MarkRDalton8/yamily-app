@@ -194,7 +194,7 @@ export default function Events() {
                 type="text"
                 required
                 placeholder="e.g., Dalton Annual Gingerbread House Party"
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-900"
                 value={formData.title}
                 onChange={(e) => setFormData({...formData, title: e.target.value})}
               />
@@ -205,7 +205,7 @@ export default function Events() {
               <textarea
                 rows="3"
                 placeholder="Tell guests what to expect..."
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-900"
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
               />
@@ -231,7 +231,7 @@ export default function Events() {
                 <input
                   type="text"
                   placeholder="e.g., Sarah Jones"
-                  className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-900"
                   value={guestInput}
                   onChange={(e) => setGuestInput(e.target.value)}
                   onKeyPress={handleGuestKeyPress}
