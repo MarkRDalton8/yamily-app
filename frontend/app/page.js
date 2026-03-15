@@ -47,13 +47,13 @@ export default function HomePage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-12 sm:pb-16">
         <div className="text-center mb-12 sm:mb-16">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6">
-            Rate Your Family Gatherings
+            Rate Your Gatherings
           </h1>
-          <p className="text-lg sm:text-xl lg:text-2xl text-gray-700 mb-3 sm:mb-4 max-w-3xl mx-auto leading-relaxed">
-            Because someone needs to keep track of Uncle Bob's questionable casseroles.
+          <p className="text-lg sm:text-xl lg:text-2xl text-gray-600 mb-3 sm:mb-4 max-w-3xl mx-auto leading-relaxed">
+            Because every dinner party deserves a rating
           </p>
           <p className="text-base sm:text-lg text-gray-700 mb-6 sm:mb-8 max-w-2xl mx-auto">
-            The honest, anonymous review platform for family parties, gatherings, and events.
+            The honest, anonymous review platform for all your gatherings and events.
             Share what really happened with those who were there.
           </p>
           <Link
@@ -110,7 +110,7 @@ export default function HomePage() {
               </div>
               <h3 className="font-bold text-lg text-gray-900 mb-2">Create Event</h3>
               <p className="text-gray-700">
-                Set up your gathering and invite family members via shareable link
+                Set up your gathering and invite guests via shareable link
               </p>
             </div>
 
@@ -144,7 +144,7 @@ export default function HomePage() {
             Ready to Document the Madness?
           </h2>
           <p className="text-lg sm:text-xl mb-6 sm:mb-8 text-blue-100">
-            Join families everywhere who are finally being honest about their gatherings.
+            Join people everywhere who are finally being honest about their gatherings.
           </p>
           <Link
             href="/register"
@@ -158,9 +158,9 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 py-8 mt-16 sm:mt-20">
         <div className="max-w-6xl mx-auto px-4 text-center text-gray-700">
-          <p className="mb-2">🎉 Yamily - Honest reviews for family gatherings</p>
+          <p className="mb-2">🎉 Yamily - Honest reviews for your gatherings</p>
           <p className="text-sm">
-            Because every family dinner deserves a rating.
+            Because every dinner party deserves a rating.
           </p>
         </div>
       </footer>

@@ -175,7 +175,7 @@ export default function MyEvents() {
                 <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg p-8 text-center">
                   <p className="text-gray-700 text-lg mb-2">No events hosted yet</p>
                   <p className="text-gray-700 text-sm mb-4">
-                    Ready to subject your family to honest reviews? Create your first event.
+                    Ready to subject your gathering to honest reviews? Create your first event.
                   </p>
                   <a href="/events"
                     className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
@@ -289,7 +289,7 @@ export default function MyEvents() {
                 <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-8 text-center">
                   <p className="text-gray-700 text-lg mb-2">No events joined yet</p>
                   <p className="text-gray-700 text-sm">
-                    Waiting for an invite link? Check your messages, or maybe it got lost in the family group chat.
+                    Waiting for an invite link? Check your messages, or maybe it got lost in the group chat.
                   </p>
                 </div>
               ) : (
@@ -359,7 +359,7 @@ export default function MyEvents() {
                     Ready to Host?
                   </h3>
                   <p className="text-gray-700 mb-4">
-                    Create your own events and invite family members.
+                    Create your own events and invite people.
                     Someone's got to organize the chaos.
                   </p>
                   <button

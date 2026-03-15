@@ -1,7 +1,7 @@
 {
-  "name": "Yamily - Family Event Reviews",
+  "name": "Yamily - Event Reviews",
   "short_name": "Yamily",
-  "description": "Rate your family gatherings. Because someone needs to keep track of Uncle Bob's questionable casseroles.",
+  "description": "Rate your gatherings. Because every dinner party deserves a rating.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

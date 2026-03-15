@@ -116,7 +116,7 @@ export default function Register() {
         <div className="bg-white rounded-lg shadow-md p-8">
           <h1 className="text-3xl font-bold text-black text-center mb-2">Join Yamily</h1>
           <p className="text-gray-700 text-center mb-6">
-            Create your account and start rating family gatherings.
+            Create your account and start rating your gatherings.
           </p>
 
           {error && (

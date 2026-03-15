@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: 'Yamily - Family Event Reviews',
-  description: 'Rate your family gatherings. Because someone needs to keep track of Uncle Bob\'s questionable casseroles.',
+  title: 'Yamily - Event Reviews',
+  description: 'Rate your gatherings. Because every dinner party deserves a rating.',
   manifest: '/manifest.json',
   themeColor: '#2563eb',
   appleWebApp: {

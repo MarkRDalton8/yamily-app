@@ -114,7 +114,7 @@ function LoginForm() {
         <div className="bg-white rounded-lg shadow-md p-8">
           <h1 className="text-3xl font-bold text-black text-center mb-2">Welcome Back</h1>
           <p className="text-gray-700 text-center mb-6">
-            Log in to review your latest family gathering.
+            Log in to review your latest gathering.
           </p>
 
           {/* Success message (after registration) */}
