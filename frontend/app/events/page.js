@@ -19,10 +19,54 @@ export default function Events() {
     event_date: '',
     expected_guests: [],
     categories: [
-      { category_name: 'Food', category_emoji: '🍽️', display_order: 0 },
-      { category_name: 'Drama', category_emoji: '🎭', display_order: 1 },
-      { category_name: 'Alcohol', category_emoji: '🍷', display_order: 2 },
-      { category_name: 'Conversation', category_emoji: '💬', display_order: 3 }
+      {
+        category_name: 'Food',
+        category_emoji: '🍽️',
+        display_order: 0,
+        scale_labels: {
+          "1": "Terrible",
+          "2": "Poor",
+          "3": "Good",
+          "4": "Great",
+          "5": "Amazing"
+        }
+      },
+      {
+        category_name: 'Drama',
+        category_emoji: '🎭',
+        display_order: 1,
+        scale_labels: {
+          "1": "Peaceful",
+          "2": "Minor Tension",
+          "3": "Awkward",
+          "4": "Arguments",
+          "5": "Jerry Springer"
+        }
+      },
+      {
+        category_name: 'Alcohol',
+        category_emoji: '🍷',
+        display_order: 2,
+        scale_labels: {
+          "1": "Dry",
+          "2": "Limited",
+          "3": "Available",
+          "4": "Flowing",
+          "5": "Open Bar"
+        }
+      },
+      {
+        category_name: 'Conversation',
+        category_emoji: '💬',
+        display_order: 3,
+        scale_labels: {
+          "1": "Awkward",
+          "2": "Small Talk",
+          "3": "Engaging",
+          "4": "Deep",
+          "5": "Unforgettable"
+        }
+      }
     ]
   })
 
@@ -180,15 +224,69 @@ export default function Events() {
     setFormData({ ...formData, categories: updated })
   }
 
+  // FUNCTION - Update category scale label
+  const handleUpdateCategoryScale = (categoryIndex, ratingLevel, label) => {
+    const updated = [...formData.categories]
+    if (!updated[categoryIndex].scale_labels) {
+      updated[categoryIndex].scale_labels = {}
+    }
+    updated[categoryIndex].scale_labels[ratingLevel] = label
+    setFormData({ ...formData, categories: updated })
+  }
+
   // FUNCTION - Reset to default categories
   const handleResetCategories = () => {
     setFormData({
       ...formData,
       categories: [
-        { category_name: 'Food', category_emoji: '🍽️', display_order: 0 },
-        { category_name: 'Drama', category_emoji: '🎭', display_order: 1 },
-        { category_name: 'Alcohol', category_emoji: '🍷', display_order: 2 },
-        { category_name: 'Conversation', category_emoji: '💬', display_order: 3 }
+        {
+          category_name: 'Food',
+          category_emoji: '🍽️',
+          display_order: 0,
+          scale_labels: {
+            "1": "Terrible",
+            "2": "Poor",
+            "3": "Good",
+            "4": "Great",
+            "5": "Amazing"
+          }
+        },
+        {
+          category_name: 'Drama',
+          category_emoji: '🎭',
+          display_order: 1,
+          scale_labels: {
+            "1": "Peaceful",
+            "2": "Minor Tension",
+            "3": "Awkward",
+            "4": "Arguments",
+            "5": "Jerry Springer"
+          }
+        },
+        {
+          category_name: 'Alcohol',
+          category_emoji: '🍷',
+          display_order: 2,
+          scale_labels: {
+            "1": "Dry",
+            "2": "Limited",
+            "3": "Available",
+            "4": "Flowing",
+            "5": "Open Bar"
+          }
+        },
+        {
+          category_name: 'Conversation',
+          category_emoji: '💬',
+          display_order: 3,
+          scale_labels: {
+            "1": "Awkward",
+            "2": "Small Talk",
+            "3": "Engaging",
+            "4": "Deep",
+            "5": "Unforgettable"
+          }
+        }
       ]
     })
   }
@@ -358,38 +456,66 @@ export default function Events() {
               </p>
 
               {/* Current Categories */}
-              <div className="space-y-2 mb-4">
+              <div className="space-y-4 mb-4">
                 {formData.categories.map((cat, index) => (
-                  <div key={index} className="flex gap-2 items-center bg-gray-50 p-3 rounded-lg">
-                    <input
-                      type="text"
-                      value={cat.category_emoji}
-                      onChange={(e) => handleUpdateCategoryEmoji(index, e.target.value)}
-                      placeholder="emoji"
-                      className="w-16 px-2 py-2 border rounded text-center text-gray-900"
-                      maxLength={2}
-                    />
-                    <input
-                      type="text"
-                      value={cat.category_name}
-                      onChange={(e) => handleUpdateCategoryName(index, e.target.value)}
-                      placeholder="Category name"
-                      className="flex-1 px-3 py-2 border rounded text-gray-900"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveCategory(index)}
-                      disabled={formData.categories.length <= 2}
-                      className={`px-3 py-2 rounded font-bold ${
-                        formData.categories.length <= 2
-                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                          : 'bg-red-100 text-red-600 hover:bg-red-200'
-                      }`}
-                      title={formData.categories.length <= 2 ? 'Minimum 2 categories required' : 'Remove category'}
-                    >
-                      ×
-                    </button>
+                  <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div className="flex gap-3 items-center mb-3">
+                      <input
+                        type="text"
+                        value={cat.category_emoji}
+                        onChange={(e) => handleUpdateCategoryEmoji(index, e.target.value)}
+                        placeholder="emoji"
+                        className="w-16 px-2 py-2 border rounded text-center text-gray-900"
+                        maxLength={2}
+                      />
+                      <input
+                        type="text"
+                        value={cat.category_name}
+                        onChange={(e) => handleUpdateCategoryName(index, e.target.value)}
+                        placeholder="Category name"
+                        className="flex-1 px-3 py-2 border rounded text-gray-900"
+                        required
+                      />
+                      {formData.categories.length > 2 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCategory(index)}
+                          className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Custom scale labels (collapsible) */}
+                    <details className="mt-3">
+                      <summary className="text-sm font-medium text-gray-700 cursor-pointer hover:text-blue-600">
+                        Customize rating labels (optional)
+                      </summary>
+                      <div className="mt-3 space-y-2 pl-4">
+                        {[1, 2, 3, 4, 5].map(level => (
+                          <div key={level} className="flex items-center gap-2">
+                            <span className="text-sm text-gray-600 w-8">{level}★</span>
+                            <input
+                              type="text"
+                              value={cat.scale_labels?.[String(level)] || ''}
+                              onChange={(e) => handleUpdateCategoryScale(index, String(level), e.target.value)}
+                              placeholder={
+                                level === 1 ? 'Terrible' :
+                                level === 2 ? 'Poor' :
+                                level === 3 ? 'Good' :
+                                level === 4 ? 'Great' :
+                                'Amazing'
+                              }
+                              className="flex-1 px-3 py-1.5 border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        ))}
+                        <p className="text-xs text-gray-500 mt-2">
+                          Examples: "Boring → Cutthroat", "Mild → Fire Alarm"
+                        </p>
+                      </div>
+                    </details>
                   </div>
                 ))}
               </div>

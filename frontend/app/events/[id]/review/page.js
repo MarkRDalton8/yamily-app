@@ -214,32 +214,49 @@ export default function SubmitReview() {
             <h2 className="text-2xl font-bold mb-4">Ratings</h2>
             <p className="text-sm text-gray-600 mb-6">Rate each category from 1 (terrible) to 5 (amazing)</p>
 
-            {categories.map((category) => (
-              <div key={category.id} className="mb-4">
-                <label className="block text-gray-700 mb-2">
-                  {category.category_emoji && `${category.category_emoji} `}
-                  {category.category_name}: {formData.ratings[category.category_name] || 3} ⭐
-                </label>
-                <input
-                  type="range"
-                  min="1"
-                  max="5"
-                  value={formData.ratings[category.category_name] || 3}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    ratings: {
-                      ...formData.ratings,
-                      [category.category_name]: parseInt(e.target.value)
-                    }
-                  })}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>1 - Terrible</span>
-                  <span>5 - Amazing</span>
+            {categories.map((category) => {
+              const currentRating = formData.ratings[category.category_name] || 3
+              const scaleLabels = category.scale_labels || {
+                "1": "Terrible",
+                "2": "Poor",
+                "3": "Good",
+                "4": "Great",
+                "5": "Amazing"
+              }
+
+              return (
+                <div key={category.id} className="mb-4">
+                  <label className="block text-gray-700 mb-2">
+                    {category.category_emoji && `${category.category_emoji} `}
+                    {category.category_name}: {currentRating} ⭐
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    value={currentRating}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      ratings: {
+                        ...formData.ratings,
+                        [category.category_name]: parseInt(e.target.value)
+                      }
+                    })}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>1 - {scaleLabels["1"]}</span>
+                    <span>5 - {scaleLabels["5"]}</span>
+                  </div>
+                  {/* Show current rating label */}
+                  {currentRating > 0 && (
+                    <div className="mt-2 text-sm font-medium text-blue-600 text-center">
+                      {scaleLabels[String(currentRating)]}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* REVIEW TEXT */}

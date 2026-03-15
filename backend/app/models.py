@@ -67,6 +67,7 @@ class EventCategory(Base):
     category_name = Column(String, nullable=False)  # e.g., "Food Quality"
     category_emoji = Column(String, nullable=True)  # e.g., "🍽️"
     display_order = Column(Integer, default=0)  # For ordering categories
+    scale_labels = Column(JSON, nullable=True)  # Custom 1-5 rating labels: {"1": "Terrible", "2": "Poor", ...}
 
     # Relationship
     event = relationship("Event", back_populates="categories")

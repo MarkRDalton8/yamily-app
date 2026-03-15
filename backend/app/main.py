@@ -176,27 +176,82 @@ def create_event(
     if event.categories and len(event.categories) > 0:
         # Use custom categories
         for cat in event.categories:
+            # Use custom scale if provided, otherwise use default
+            scale_labels = cat.scale_labels if cat.scale_labels else {
+                "1": "Terrible",
+                "2": "Poor",
+                "3": "Good",
+                "4": "Great",
+                "5": "Amazing"
+            }
+
             category = models.EventCategory(
                 event_id=db_event.id,
                 category_name=cat.category_name,
                 category_emoji=cat.category_emoji,
-                display_order=cat.display_order
+                display_order=cat.display_order,
+                scale_labels=scale_labels
             )
             db.add(category)
     else:
-        # Use default categories
+        # Use default categories with themed scales
         default_categories = [
-            {"name": "Food", "emoji": "🍽️", "order": 0},
-            {"name": "Drama", "emoji": "🎭", "order": 1},
-            {"name": "Alcohol", "emoji": "🍷", "order": 2},
-            {"name": "Conversation", "emoji": "💬", "order": 3}
+            {
+                "name": "Food",
+                "emoji": "🍽️",
+                "order": 0,
+                "scale": {
+                    "1": "Terrible",
+                    "2": "Poor",
+                    "3": "Good",
+                    "4": "Great",
+                    "5": "Amazing"
+                }
+            },
+            {
+                "name": "Drama",
+                "emoji": "🎭",
+                "order": 1,
+                "scale": {
+                    "1": "Peaceful",
+                    "2": "Minor Tension",
+                    "3": "Awkward",
+                    "4": "Arguments",
+                    "5": "Jerry Springer"
+                }
+            },
+            {
+                "name": "Alcohol",
+                "emoji": "🍷",
+                "order": 2,
+                "scale": {
+                    "1": "Dry",
+                    "2": "Limited",
+                    "3": "Available",
+                    "4": "Flowing",
+                    "5": "Open Bar"
+                }
+            },
+            {
+                "name": "Conversation",
+                "emoji": "💬",
+                "order": 3,
+                "scale": {
+                    "1": "Awkward",
+                    "2": "Small Talk",
+                    "3": "Engaging",
+                    "4": "Deep",
+                    "5": "Unforgettable"
+                }
+            }
         ]
         for cat in default_categories:
             category = models.EventCategory(
                 event_id=db_event.id,
                 category_name=cat["name"],
                 category_emoji=cat["emoji"],
-                display_order=cat["order"]
+                display_order=cat["order"],
+                scale_labels=cat["scale"]
             )
             db.add(category)
 
@@ -280,7 +335,8 @@ def get_event_detail(
                 "id": cat.id,
                 "category_name": cat.category_name,
                 "category_emoji": cat.category_emoji,
-                "display_order": cat.display_order
+                "display_order": cat.display_order,
+                "scale_labels": cat.scale_labels
             }
             for cat in categories
         ],

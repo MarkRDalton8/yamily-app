@@ -41,12 +41,14 @@ class CategoryCreate(BaseModel):
     category_name: str
     category_emoji: Optional[str] = None
     display_order: int = 0
+    scale_labels: Optional[Dict[str, str]] = None  # Custom 1-5 rating labels
 
 class CategoryResponse(BaseModel):
     id: int
     category_name: str
     category_emoji: Optional[str]
     display_order: int
+    scale_labels: Optional[Dict[str, str]] = None  # Custom 1-5 rating labels
 
     class Config:
         from_attributes = True
