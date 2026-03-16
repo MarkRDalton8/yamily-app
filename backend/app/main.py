@@ -1509,14 +1509,22 @@ def process_ai_guests_background_job(
                 models.EventComment.event_id == ai_guest.event_id
             ).order_by(models.EventComment.created_at.desc()).limit(3).all()
 
-            recent_comments_list = [
-                {
-                    "ai_persona_name": c.ai_persona_name,
-                    "commenter_name": c.commenter.display_name if c.user_id else None,
+            recent_comments_list = []
+            for c in recent_comments:
+                # Get commenter name (either EventGuest display_name or AI persona name)
+                if c.user_id:
+                    commenter_guest = db.query(models.EventGuest).filter(
+                        models.EventGuest.event_id == ai_guest.event_id,
+                        models.EventGuest.user_id == c.user_id
+                    ).first()
+                    commenter_name = commenter_guest.display_name if commenter_guest else "Unknown"
+                else:
+                    commenter_name = c.ai_persona_name
+
+                recent_comments_list.append({
+                    "commenter_name": commenter_name,
                     "comment_text": c.comment_text
-                }
-                for c in recent_comments
-            ]
+                })
 
             # Generate comment prompt
             from app.ai_personas import get_live_comment_prompt
