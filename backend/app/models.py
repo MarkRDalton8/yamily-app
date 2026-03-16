@@ -77,7 +77,7 @@ class Review(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     event_id = Column(Integer, ForeignKey("events.id"))
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # NULL for AI reviews
 
     # Custom ratings stored as JSON: {"Food": 5, "Drama": 4, "Alcohol": 3}
     ratings = Column(JSON, nullable=False)
@@ -90,6 +90,11 @@ class Review(Base):
     tags = Column(JSON)  # Store tags as JSON array
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # AI-generated review fields
+    is_ai_generated = Column(Integer, default=0)  # SQLite doesn't have native Boolean, use 0/1
+    ai_persona_type = Column(String, nullable=True)  # "karen", "lightweight", "genz"
+    ai_persona_name = Column(String, nullable=True)  # "Aunt Susan", "Uncle Mike", etc.
 
     # Relationships
     event = relationship("Event", back_populates="reviews")

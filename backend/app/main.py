@@ -12,6 +12,9 @@ from app import models, schemas, auth
 from app.auth import get_current_user, oauth2_scheme, SECRET_KEY, ALGORITHM
 from fastapi.middleware.cors import CORSMiddleware
 from jose import jwt
+from app.ai_personas import get_persona_prompt
+from app.ai_helper import generate_ai_review
+from pydantic import BaseModel
 
 # Create the database tables
 models.Base.metadata.create_all(bind=engine)
@@ -561,13 +564,130 @@ def get_event_reviews(event_id: int, db: Session = Depends(get_db)):
             "review_text": review.review_text,
             "tags": review.tags,
             "created_at": review.created_at,
-            "display_name": guest.display_name if guest else "Anonymous",
+            "display_name": guest.display_name if guest and not review.is_ai_generated else (review.ai_persona_name if review.is_ai_generated else "Anonymous"),
             "upvotes": upvotes,
-            "downvotes": downvotes
+            "downvotes": downvotes,
+            "is_ai_generated": bool(review.is_ai_generated),
+            "ai_persona_type": review.ai_persona_type,
+            "ai_persona_name": review.ai_persona_name
         }
         reviews_with_data.append(review_dict)
     
     return reviews_with_data
+
+
+# AI Review Request Model
+class AIReviewRequest(BaseModel):
+    persona_type: str
+    persona_name: str
+
+
+# Generate AI persona review
+@app.post("/events/{event_id}/ai-review")
+def create_ai_review(
+    event_id: int,
+    request: AIReviewRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Generate an AI review from a character persona.
+    Available personas: karen, lightweight, genz
+    """
+
+    # Verify event exists and has ended
+    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    if event.status != "ended":
+        raise HTTPException(status_code=400, detail="AI reviews only available for ended events")
+
+    # Verify persona_type is valid
+    valid_personas = ["karen", "lightweight", "genz"]
+    if request.persona_type not in valid_personas:
+        raise HTTPException(status_code=400, detail=f"Invalid persona_type. Must be one of: {valid_personas}")
+
+    # Get event categories
+    categories = db.query(models.EventCategory).filter(
+        models.EventCategory.event_id == event_id
+    ).order_by(models.EventCategory.display_order).all()
+
+    if not categories:
+        raise HTTPException(status_code=400, detail="Event has no categories")
+
+    # Get existing reviews for context (only real reviews, not AI)
+    existing_reviews = db.query(models.Review).filter(
+        models.Review.event_id == event_id,
+        models.Review.is_ai_generated == 0  # Only real reviews
+    ).all()
+
+    # Format data for prompt
+    categories_data = [
+        {"category_name": cat.category_name, "category_emoji": cat.category_emoji}
+        for cat in categories
+    ]
+
+    existing_reviews_data = [
+        {"memorable_moment": rev.memorable_moments}
+        for rev in existing_reviews if rev.memorable_moments
+    ]
+
+    # Get system prompt
+    system_prompt = get_persona_prompt(
+        persona_type=request.persona_type,
+        persona_name=request.persona_name,
+        event_name=event.title,
+        event_date=event.event_date.isoformat(),
+        categories=categories_data,
+        existing_reviews=existing_reviews_data
+    )
+
+    # Call Anthropic API
+    try:
+        review_data = generate_ai_review(system_prompt)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate AI review: {str(e)}")
+
+    # Validate ratings match categories
+    expected_categories = {cat.category_name for cat in categories}
+    provided_categories = set(review_data["ratings"].keys())
+
+    if expected_categories != provided_categories:
+        raise HTTPException(
+            status_code=500,
+            detail="AI generated ratings don't match event categories"
+        )
+
+    # Create the AI review
+    ai_review = models.Review(
+        event_id=event_id,
+        user_id=None,  # AI reviews don't have a user
+        ratings=review_data["ratings"],
+        review_text=review_data["review"],  # Main review text (required)
+        memorable_moments=review_data.get("memorable_moment"),  # Optional
+        tags=[],  # AI reviews don't have tags
+        is_ai_generated=1,  # Mark as AI
+        ai_persona_type=request.persona_type,
+        ai_persona_name=request.persona_name
+    )
+
+    db.add(ai_review)
+    db.commit()
+    db.refresh(ai_review)
+
+    return {
+        "id": ai_review.id,
+        "event_id": ai_review.event_id,
+        "ratings": ai_review.ratings,
+        "review": ai_review.review_text,
+        "memorable_moment": ai_review.memorable_moments,
+        "is_ai_generated": True,
+        "ai_persona_type": ai_review.ai_persona_type,
+        "ai_persona_name": ai_review.ai_persona_name,
+        "created_at": ai_review.created_at
+    }
+
 
 #login endpoint
 from fastapi.security import OAuth2PasswordRequestForm
