@@ -36,6 +36,26 @@ class ExpectedGuestResponse(ExpectedGuestBase):
     class Config:
         from_attributes = True
 
+# AI Guest Invite Schemas
+class AIGuestInvite(BaseModel):
+    """Schema for inviting an AI persona to an event"""
+    ai_persona_type: str  # "karen", "lightweight", "genz"
+    ai_persona_name: str  # e.g., "Aunt Susan", "Uncle Mike"
+
+class AIGuestResponse(BaseModel):
+    id: int
+    event_id: int
+    ai_persona_type: str
+    ai_persona_name: str
+    has_text_commented: bool
+    text_comment_scheduled_time: Optional[datetime]
+    last_photo_reaction_time: Optional[datetime]
+    has_reviewed: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
 # Category Schemas
 class CategoryCreate(BaseModel):
     category_name: str
@@ -60,6 +80,7 @@ class EventCreate(BaseModel):
     event_date: datetime
     expected_guests: Optional[List[str]] = []  # List of guest names
     categories: Optional[List[CategoryCreate]] = None  # Custom categories (defaults to standard 4 if None)
+    ai_guests: Optional[List[AIGuestInvite]] = []  # AI personas to invite
 
 class EventResponse(BaseModel):
     id: int

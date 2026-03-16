@@ -15,6 +15,8 @@ from jose import jwt
 from app.ai_personas import get_persona_prompt
 from app.ai_helper import generate_ai_review
 from pydantic import BaseModel
+from datetime import datetime, timezone, timedelta
+import random
 
 # Create the database tables
 models.Base.metadata.create_all(bind=engine)
@@ -258,6 +260,24 @@ def create_event(
             )
             db.add(category)
 
+    # Create AI guest invites
+    if event.ai_guests and len(event.ai_guests) > 0:
+        for ai_guest in event.ai_guests:
+            # Schedule initial text comment at a random time during the event
+            # Assume event lasts 3 hours, schedule comment sometime in first 2 hours
+            hours_offset = random.uniform(0.5, 2.0)  # Random time 30min - 2hrs into event
+            scheduled_time = event.event_date + timedelta(hours=hours_offset)
+
+            ai_guest_record = models.EventAIGuest(
+                event_id=db_event.id,
+                ai_persona_type=ai_guest.ai_persona_type,
+                ai_persona_name=ai_guest.ai_persona_name,
+                text_comment_scheduled_time=scheduled_time,
+                has_text_commented=False,
+                has_reviewed=False
+            )
+            db.add(ai_guest_record)
+
     # Auto-join host to their own event
     host_guest = models.EventGuest(
         event_id=db_event.id,
@@ -398,6 +418,78 @@ def end_event(
     event.status = "ended"
     db.commit()
     db.refresh(event)
+
+    # Auto-generate reviews for any invited AI guests who haven't reviewed yet
+    ai_guests = db.query(models.EventAIGuest).filter(
+        models.EventAIGuest.event_id == event_id,
+        models.EventAIGuest.has_reviewed == False
+    ).all()
+
+    for ai_guest in ai_guests:
+        try:
+            # Get event categories for the review
+            categories = db.query(models.EventCategory).filter(
+                models.EventCategory.event_id == event_id
+            ).order_by(models.EventCategory.display_order).all()
+
+            categories_list = [
+                {
+                    "category_name": cat.category_name,
+                    "category_emoji": cat.category_emoji
+                }
+                for cat in categories
+            ]
+
+            # Get existing reviews for context
+            existing_reviews = db.query(models.Review).filter(
+                models.Review.event_id == event_id
+            ).limit(3).all()
+
+            existing_reviews_list = [
+                {
+                    "memorable_moment": review.memorable_moments,
+                    "review_text": review.review_text
+                }
+                for review in existing_reviews
+            ]
+
+            # Generate AI review prompt
+            from app.ai_personas import get_persona_prompt
+            prompt = get_persona_prompt(
+                persona_type=ai_guest.ai_persona_type,
+                persona_name=ai_guest.ai_persona_name,
+                event_name=event.title,
+                event_date=event.event_date.strftime("%B %d, %Y"),
+                categories=categories_list,
+                existing_reviews=existing_reviews_list
+            )
+
+            # Generate the review
+            review_data = generate_ai_review(prompt)
+
+            # Create review record
+            ai_review = models.Review(
+                event_id=event_id,
+                user_id=None,  # AI reviews have no user_id
+                ratings=review_data["ratings"],
+                review_text=review_data["review"],
+                memorable_moments=review_data.get("memorable_moment", ""),
+                tags=[],
+                is_ai_generated=1,
+                ai_persona_type=ai_guest.ai_persona_type,
+                ai_persona_name=ai_guest.ai_persona_name
+            )
+            db.add(ai_review)
+
+            # Mark AI guest as having reviewed
+            ai_guest.has_reviewed = True
+
+        except Exception as e:
+            # Log error but don't fail the endpoint
+            print(f"Failed to generate AI review for {ai_guest.ai_persona_name}: {e}")
+            continue
+
+    db.commit()
 
     return {"message": "Event ended", "status": event.status}
 
@@ -1368,5 +1460,163 @@ def get_all_events_admin(
                 "avg_ratings": avg_ratings  # Dynamic custom category averages
             }
         })
-    
+
     return result
+
+
+@app.post("/admin/process-ai-guests")
+def process_ai_guests_background_job(
+    db: Session = Depends(get_db)
+):
+    """
+    Background job endpoint: Process pending AI guest actions.
+    This should be called by a cron job every 10 minutes.
+
+    Actions:
+    1. Generate scheduled text comments
+    2. Generate photo reactions for recent photos
+    """
+
+    results = {
+        "comments_generated": 0,
+        "photo_reactions_generated": 0,
+        "errors": []
+    }
+
+    current_time = datetime.now(timezone.utc)
+
+    # PART 1: Find AI guests with scheduled comments that are due
+    pending_comments = db.query(models.EventAIGuest).filter(
+        models.EventAIGuest.has_text_commented == False,
+        models.EventAIGuest.text_comment_scheduled_time <= current_time
+    ).all()
+
+    for ai_guest in pending_comments:
+        try:
+            # Get event details
+            event = db.query(models.Event).filter(models.Event.id == ai_guest.event_id).first()
+            if not event or event.status != "live":
+                continue  # Skip if event not found or not live
+
+            # Get recent comments for context
+            recent_comments = db.query(models.EventComment).filter(
+                models.EventComment.event_id == ai_guest.event_id
+            ).order_by(models.EventComment.created_at.desc()).limit(3).all()
+
+            recent_comments_list = [
+                {
+                    "ai_persona_name": c.ai_persona_name,
+                    "commenter_name": c.commenter.display_name if c.user_id else None,
+                    "comment_text": c.comment_text
+                }
+                for c in recent_comments
+            ]
+
+            # Generate comment prompt
+            from app.ai_personas import get_live_comment_prompt
+            prompt = get_live_comment_prompt(
+                persona_type=ai_guest.ai_persona_type,
+                persona_name=ai_guest.ai_persona_name,
+                event_name=event.title,
+                event_status=event.status,
+                recent_comments=recent_comments_list
+            )
+
+            # Generate comment
+            from app.ai_helper import generate_ai_live_comment
+            comment_data = generate_ai_live_comment(prompt)
+
+            # Create comment record
+            ai_comment = models.EventComment(
+                event_id=ai_guest.event_id,
+                user_id=None,  # AI comments have no user_id
+                comment_text=comment_data["comment"],
+                is_ai_generated=True,
+                ai_persona_type=ai_guest.ai_persona_type,
+                ai_persona_name=ai_guest.ai_persona_name
+            )
+            db.add(ai_comment)
+
+            # Mark as commented
+            ai_guest.has_text_commented = True
+
+            results["comments_generated"] += 1
+
+        except Exception as e:
+            results["errors"].append(f"Failed to generate comment for {ai_guest.ai_persona_name}: {str(e)}")
+            continue
+
+    # PART 2: Find recent photos and generate reactions
+    # Look for photos posted in the last 15 minutes that AI guests haven't reacted to yet
+    recent_photo_cutoff = current_time - timedelta(minutes=15)
+
+    # Get all live events with AI guests
+    live_events = db.query(models.Event).filter(models.Event.status == "live").all()
+
+    for event in live_events:
+        # Get AI guests for this event
+        ai_guests_for_event = db.query(models.EventAIGuest).filter(
+            models.EventAIGuest.event_id == event.id
+        ).all()
+
+        if not ai_guests_for_event:
+            continue
+
+        # Get recent photos posted to this event
+        recent_photos = db.query(models.EventComment).filter(
+            models.EventComment.event_id == event.id,
+            models.EventComment.photo_url.isnot(None),
+            models.EventComment.created_at >= recent_photo_cutoff
+        ).all()
+
+        if not recent_photos:
+            continue
+
+        # For each AI guest, check if they should react to a photo
+        for ai_guest in ai_guests_for_event:
+            # Only react if they haven't reacted in the last 30 minutes (avoid spam)
+            if ai_guest.last_photo_reaction_time:
+                time_since_last_reaction = current_time - ai_guest.last_photo_reaction_time
+                if time_since_last_reaction < timedelta(minutes=30):
+                    continue
+
+            # Pick a random recent photo to react to
+            if recent_photos:
+                photo_comment = random.choice(recent_photos)
+
+                try:
+                    # Generate photo reaction prompt
+                    from app.ai_personas import get_photo_reaction_prompt
+                    prompt = get_photo_reaction_prompt(
+                        persona_type=ai_guest.ai_persona_type,
+                        persona_name=ai_guest.ai_persona_name,
+                        event_name=event.title
+                    )
+
+                    # Generate reaction using vision API
+                    from app.ai_helper import generate_ai_photo_reaction
+                    reaction_data = generate_ai_photo_reaction(prompt, photo_comment.photo_url)
+
+                    # Create reaction comment
+                    ai_reaction = models.EventComment(
+                        event_id=event.id,
+                        user_id=None,  # AI comments have no user_id
+                        comment_text=reaction_data["comment"],
+                        is_ai_generated=True,
+                        ai_persona_type=ai_guest.ai_persona_type,
+                        ai_persona_name=ai_guest.ai_persona_name
+                    )
+                    db.add(ai_reaction)
+
+                    # Update last reaction time
+                    ai_guest.last_photo_reaction_time = current_time
+
+                    results["photo_reactions_generated"] += 1
+
+                except Exception as e:
+                    results["errors"].append(f"Failed to generate photo reaction for {ai_guest.ai_persona_name}: {str(e)}")
+                    continue
+
+    db.commit()
+
+    return results
