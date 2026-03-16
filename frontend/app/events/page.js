@@ -18,6 +18,7 @@ export default function Events() {
     description: '',
     event_date: '',
     expected_guests: [],
+    ai_guests: [],  // AI personas to invite
     categories: [
       {
         category_name: 'Food',
@@ -72,6 +73,10 @@ export default function Events() {
 
   // STATE - Track guest input field
   const [guestInput, setGuestInput] = useState('')
+
+  // STATE - Track AI guest inputs
+  const [aiPersonaType, setAiPersonaType] = useState('karen')
+  const [aiPersonaName, setAiPersonaName] = useState('')
 
   // STATE - Track new category inputs
   const [newCategoryName, setNewCategoryName] = useState('')
@@ -138,6 +143,7 @@ export default function Events() {
         description: '',
         event_date: '',
         expected_guests: [],
+        ai_guests: [],
         categories: [
           { category_name: 'Food', category_emoji: '🍽️', display_order: 0 },
           { category_name: 'Drama', category_emoji: '🎭', display_order: 1 },
@@ -146,6 +152,8 @@ export default function Events() {
         ]
       })
       setGuestInput('')
+      setAiPersonaName('')
+      setAiPersonaType('karen')
       setNewCategoryName('')
       setNewCategoryEmoji('')
     } catch (err) {
@@ -180,6 +188,28 @@ export default function Events() {
       e.preventDefault()
       handleAddGuest()
     }
+  }
+
+  // FUNCTION - Add AI guest to list
+  const handleAddAIGuest = () => {
+    if (aiPersonaName.trim()) {
+      setFormData({
+        ...formData,
+        ai_guests: [...formData.ai_guests, {
+          ai_persona_type: aiPersonaType,
+          ai_persona_name: aiPersonaName.trim()
+        }]
+      })
+      setAiPersonaName('')
+    }
+  }
+
+  // FUNCTION - Remove AI guest from list
+  const handleRemoveAIGuest = (index) => {
+    setFormData({
+      ...formData,
+      ai_guests: formData.ai_guests.filter((_, i) => i !== index)
+    })
   }
 
   // FUNCTION - Add custom category
@@ -433,6 +463,61 @@ export default function Events() {
                         type="button"
                         onClick={() => handleRemoveGuest(index)}
                         className="text-blue-600 hover:text-blue-800 font-bold"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* AI Persona Invites Section */}
+            <div className="mb-6">
+              <label className="block text-gray-900 font-semibold mb-2">
+                🤖 Invite AI Personas (Optional)
+              </label>
+              <p className="text-sm text-gray-700 mb-3">
+                Invite hilarious AI characters to join your event! They'll post live comments and leave reviews with personality.
+              </p>
+              <div className="flex gap-2 mb-3">
+                <select
+                  className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  value={aiPersonaType}
+                  onChange={(e) => setAiPersonaType(e.target.value)}
+                >
+                  <option value="karen">Karen (Passive-Aggressive)</option>
+                  <option value="lightweight">Lightweight (Always Drunk)</option>
+                  <option value="genz">Gen Z (Chaotic Slang)</option>
+                </select>
+                <input
+                  type="text"
+                  placeholder="e.g., Aunt Susan"
+                  className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-500 text-gray-900"
+                  value={aiPersonaName}
+                  onChange={(e) => setAiPersonaName(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddAIGuest}
+                  disabled={!aiPersonaName.trim()}
+                  className="px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  Invite
+                </button>
+              </div>
+              {formData.ai_guests.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.ai_guests.map((aiGuest, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-2 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm"
+                    >
+                      🤖 {aiGuest.ai_persona_name} ({aiGuest.ai_persona_type})
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAIGuest(index)}
+                        className="text-purple-600 hover:text-purple-800 font-bold"
                       >
                         ×
                       </button>

@@ -1040,6 +1040,11 @@ export default function EventDetail() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 flex-wrap">
                           <span className="font-bold text-gray-900">{comment.commenter_name}</span>
+                          {comment.is_ai_generated && (
+                            <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full font-medium">
+                              🤖 AI
+                            </span>
+                          )}
                           <span className="text-gray-700 text-xs">
                             {formatTimestamp(comment.created_at)}
                           </span>
