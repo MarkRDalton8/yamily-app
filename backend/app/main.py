@@ -1344,6 +1344,7 @@ def get_event_summary(event_id: int, db: Session = Depends(get_db)):
             "id": r.id,
             "display_name": guest.display_name if guest else "Anonymous",
             "ratings": r.ratings,  # Custom ratings as JSON
+            "review_text": r.review_text,
             "memorable_moment": r.memorable_moments,
             "created_at": r.created_at
         })
