@@ -5,7 +5,14 @@ import os
 import json
 from anthropic import Anthropic
 
-client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+# Support both direct Anthropic API and OpenWebUI/proxy endpoints
+api_key = os.environ.get("OPENWEBUI_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
+base_url = os.environ.get("OPENWEBUI_ENDPOINT")
+
+if base_url:
+    client = Anthropic(api_key=api_key, base_url=base_url)
+else:
+    client = Anthropic(api_key=api_key)
 
 def generate_ai_review(system_prompt: str) -> dict:
     """
@@ -23,8 +30,11 @@ def generate_ai_review(system_prompt: str) -> dict:
     """
 
     try:
+        # Use configured model or default to direct Anthropic model
+        model = os.environ.get("OPENWEBUI_MODEL") or "claude-sonnet-4-20250514"
+
         message = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=model,
             max_tokens=1000,
             system=system_prompt,
             messages=[
