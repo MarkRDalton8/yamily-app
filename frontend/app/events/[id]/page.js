@@ -425,14 +425,18 @@ export default function EventDetail() {
 
   // FUNCTION - Generate AI review
   const handleGenerateAIReview = async () => {
-    if (!personaName.trim()) {
-      alert('Please enter a name for your AI reviewer')
-      return
-    }
-
     try {
       setGeneratingAI(true)
       const token = localStorage.getItem('token')
+
+      // Use custom name or generate a default based on persona type
+      const defaultNames = {
+        karen: 'Karen',
+        lightweight: 'Uncle Rick',
+        genz: 'TikTok User'
+      }
+      const finalName = personaName.trim() || defaultNames[selectedPersona]
+
       const response = await fetch(`${API_URL}/events/${eventId}/ai-review`, {
         method: 'POST',
         headers: {
@@ -441,7 +445,7 @@ export default function EventDetail() {
         },
         body: JSON.stringify({
           persona_type: selectedPersona,
-          persona_name: personaName
+          persona_name: finalName
         })
       })
 
@@ -452,8 +456,8 @@ export default function EventDetail() {
         return
       }
 
-      const data = await response.json()
-      alert(`AI review generated! ${personaName} has shared their thoughts. 🤖`)
+      await response.json()
+      alert(`AI review generated! ${finalName} has shared their thoughts. 🤖`)
 
       // Close modal and reset
       setShowAIModal(false)
@@ -1142,16 +1146,16 @@ export default function EventDetail() {
                 {/* Persona Name Input */}
                 <div className="mb-6">
                   <label className="block text-gray-800 font-semibold mb-2">
-                    Character Name
+                    Character Name <span className="text-gray-500 font-normal">(optional)</span>
                   </label>
                   <input
                     type="text"
                     value={personaName}
                     onChange={(e) => setPersonaName(e.target.value)}
-                    placeholder='e.g., "Aunt Susan" or "Uncle Mike"'
+                    placeholder='e.g., "Aunt Susan" or "Uncle Mike" (or leave blank for default)'
                     className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
                   />
-                  <p className="text-sm text-gray-700 mt-1">Give your AI reviewer a name - it'll sign the review with this</p>
+                  <p className="text-sm text-gray-700 mt-1">Give your AI reviewer a custom name, or leave blank to use a default</p>
                 </div>
 
                 {/* Persona Selection */}
@@ -1235,7 +1239,7 @@ export default function EventDetail() {
                   </button>
                   <button
                     onClick={handleGenerateAIReview}
-                    disabled={generatingAI || !personaName.trim()}
+                    disabled={generatingAI}
                     className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 font-semibold transition-colors"
                   >
                     {generatingAI ? 'Generating...' : 'Generate Review'}

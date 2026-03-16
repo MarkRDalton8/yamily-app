@@ -129,6 +129,9 @@ export default function Events() {
       const event = await response.json()
       setCreatedEvent(event)
 
+      // Redirect to event detail page
+      router.push(`/events/${event.id}`)
+
       // Clear the form
       setFormData({
         title: '',

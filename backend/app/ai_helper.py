@@ -1,22 +1,13 @@
 """
-Helper functions for calling Anthropic API.
+Helper functions for calling Anthropic API or OpenWebUI proxy.
 """
 import os
 import json
-from anthropic import Anthropic
-
-# Support both direct Anthropic API and OpenWebUI/proxy endpoints
-api_key = os.environ.get("OPENWEBUI_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
-base_url = os.environ.get("OPENWEBUI_ENDPOINT")
-
-if base_url:
-    client = Anthropic(api_key=api_key, base_url=base_url)
-else:
-    client = Anthropic(api_key=api_key)
+import requests
 
 def generate_ai_review(system_prompt: str) -> dict:
     """
-    Call Anthropic API to generate an AI review.
+    Call Anthropic API or OpenWebUI to generate an AI review.
 
     Args:
         system_prompt: The formatted system prompt for the persona
@@ -26,48 +17,107 @@ def generate_ai_review(system_prompt: str) -> dict:
 
     Raises:
         ValueError: If response is invalid JSON or missing required fields
-        Exception: If Anthropic API call fails
+        Exception: If API call fails
     """
 
+    # Check if using OpenWebUI or direct Anthropic
+    openwebui_endpoint = os.environ.get("OPENWEBUI_ENDPOINT")
+    openwebui_key = os.environ.get("OPENWEBUI_API_KEY")
+    openwebui_model = os.environ.get("OPENWEBUI_MODEL")
+
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
+
     try:
-        # Use configured model or default to direct Anthropic model
-        model = os.environ.get("OPENWEBUI_MODEL") or "claude-sonnet-4-20250514"
-
-        message = client.messages.create(
-            model=model,
-            max_tokens=1000,
-            system=system_prompt,
-            messages=[
-                {
-                    "role": "user",
-                    "content": "Generate the review now in the JSON format specified. Output ONLY the JSON, nothing else."
-                }
-            ]
-        )
-
-        # Extract the response text
-        response_text = message.content[0].text.strip()
+        if openwebui_endpoint and openwebui_key:
+            # Use OpenWebUI with OpenAI-compatible format
+            response_text = _call_openwebui(
+                endpoint=openwebui_endpoint,
+                api_key=openwebui_key,
+                model=openwebui_model or "claude-sonnet-4-20250514",
+                system_prompt=system_prompt
+            )
+        elif anthropic_key:
+            # Use direct Anthropic API
+            response_text = _call_anthropic(
+                api_key=anthropic_key,
+                system_prompt=system_prompt
+            )
+        else:
+            raise Exception("No API key configured. Set either OPENWEBUI_API_KEY or ANTHROPIC_API_KEY")
 
         # Remove markdown code blocks if present
         if response_text.startswith("```"):
-            # Remove ```json or ``` from start and ``` from end
             lines = response_text.split("\n")
             response_text = "\n".join(lines[1:-1])
 
         # Parse JSON response
         review_data = json.loads(response_text)
 
-        # Validate structure - ratings and review are required, memorable_moment is optional
+        # Validate structure
         if "ratings" not in review_data:
             raise ValueError("Response missing required 'ratings' field")
         if "review" not in review_data:
             raise ValueError("Response missing required 'review' field")
-
-        # memorable_moment is optional, so we don't check for it
 
         return review_data
 
     except json.JSONDecodeError as e:
         raise ValueError(f"Failed to parse AI response as JSON: {e}")
     except Exception as e:
-        raise Exception(f"Anthropic API error: {e}")
+        raise Exception(f"AI API error: {e}")
+
+
+def _call_openwebui(endpoint: str, api_key: str, model: str, system_prompt: str) -> str:
+    """Call OpenWebUI using OpenAI-compatible API format."""
+    # Ensure endpoint ends with /v1/chat/completions
+    if not endpoint.endswith('/'):
+        endpoint += '/'
+    api_url = endpoint + 'v1/chat/completions'
+
+    headers = {
+        'Authorization': f'Bearer {api_key}',
+        'Content-Type': 'application/json'
+    }
+
+    payload = {
+        'model': model,
+        'messages': [
+            {
+                'role': 'system',
+                'content': system_prompt
+            },
+            {
+                'role': 'user',
+                'content': 'Generate the review now in the JSON format specified. Output ONLY the JSON, nothing else.'
+            }
+        ],
+        'max_tokens': 1000,
+        'temperature': 0.7
+    }
+
+    response = requests.post(api_url, headers=headers, json=payload, timeout=30)
+    response.raise_for_status()
+
+    data = response.json()
+    return data['choices'][0]['message']['content'].strip()
+
+
+def _call_anthropic(api_key: str, system_prompt: str) -> str:
+    """Call direct Anthropic API."""
+    from anthropic import Anthropic
+
+    client = Anthropic(api_key=api_key)
+
+    message = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=1000,
+        system=system_prompt,
+        messages=[
+            {
+                "role": "user",
+                "content": "Generate the review now in the JSON format specified. Output ONLY the JSON, nothing else."
+            }
+        ]
+    )
+
+    return message.content[0].text.strip()
