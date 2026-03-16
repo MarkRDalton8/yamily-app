@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, JSON, UniqueConstraint, Enum, Text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, JSON, UniqueConstraint, Enum, Text, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from app.database import Base
@@ -58,6 +58,7 @@ class Event(Base):
     expected_guests = relationship("ExpectedGuest", back_populates="event", cascade="all, delete-orphan")
     comments = relationship("EventComment", back_populates="event", cascade="all, delete-orphan")
     categories = relationship("EventCategory", back_populates="event", cascade="all, delete-orphan")
+    ai_guests = relationship("EventAIGuest", back_populates="event", cascade="all, delete-orphan")
 
 class EventCategory(Base):
     __tablename__ = "event_categories"
@@ -124,6 +125,32 @@ class ExpectedGuest(Base):
     # Relationships
     event = relationship("Event", back_populates="expected_guests")
 
+
+class EventAIGuest(Base):
+    """AI personas invited to the event as virtual guests"""
+    __tablename__ = "event_ai_guests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
+
+    # AI persona info
+    ai_persona_type = Column(String, nullable=False)  # "karen", "lightweight", "genz"
+    ai_persona_name = Column(String, nullable=False)  # "Aunt Susan", "Uncle Mike"
+
+    # Behavior tracking
+    has_text_commented = Column(Boolean, default=False)
+    text_comment_scheduled_time = Column(DateTime, nullable=True)  # When they should comment
+
+    last_photo_reaction_time = Column(DateTime, nullable=True)  # Track when they last reacted
+
+    has_reviewed = Column(Boolean, default=False)  # Have they left end-of-event review?
+
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    event = relationship("Event", back_populates="ai_guests")
+
+
 class ReviewVote(Base):
     __tablename__ = "review_votes"
 
@@ -143,7 +170,7 @@ class EventComment(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # NULL for AI comments
     comment_text = Column(String, nullable=False)
     photo_url = Column(String, nullable=True)  # For Day 4 - leave null for now
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -151,6 +178,11 @@ class EventComment(Base):
     # Vote counts (denormalized for performance)
     upvotes = Column(Integer, default=0)
     downvotes = Column(Integer, default=0)
+
+    # AI-generated content
+    is_ai_generated = Column(Boolean, default=False)
+    ai_persona_type = Column(String, nullable=True)  # "karen", "lightweight", "genz"
+    ai_persona_name = Column(String, nullable=True)  # "Aunt Susan", etc.
 
     # Relationships
     event = relationship("Event", back_populates="comments")
