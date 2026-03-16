@@ -39,8 +39,8 @@ export default function Navbar() {
     <nav className="bg-white shadow-sm border-b">
       <div className="max-w-6xl mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
-          {/* Logo */}
-          <a href="/" className="text-2xl font-bold text-gray-900">
+          {/* Logo - links to My Events if logged in, otherwise homepage */}
+          <a href={user ? "/my-events" : "/"} className="text-2xl font-bold text-gray-900">
             🎉 Yamily
           </a>
           

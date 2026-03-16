@@ -52,8 +52,8 @@ export default function EventSummaryPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
           <p className="text-gray-700 text-lg mb-4">{error || 'Event not found'}</p>
-          <Link href="/" className="text-blue-600 hover:text-blue-700">
-            Go to Homepage
+          <Link href="/my-events" className="text-blue-600 hover:text-blue-700">
+            Go to My Events
           </Link>
         </div>
       </div>
@@ -70,8 +70,8 @@ export default function EventSummaryPage() {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200 mb-8">
         <div className="max-w-5xl mx-auto px-4 py-6">
-          <Link href="/" className="text-blue-600 hover:text-blue-700 text-sm mb-2 inline-block">
-            ← Back to Yamily
+          <Link href="/my-events" className="text-blue-600 hover:text-blue-700 text-sm mb-2 inline-block">
+            ← Back to My Events
           </Link>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             {event.event_name}
