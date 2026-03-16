@@ -81,15 +81,9 @@ def generate_ai_review(system_prompt: str) -> dict:
 
 def _call_openwebui(endpoint: str, api_key: str, model: str, system_prompt: str) -> str:
     """Call OpenWebUI using OpenAI-compatible API format."""
-    # OpenWebUI might already include the full path, or might need v1/chat/completions appended
-    # Try to detect and handle both cases
-    if '/v1/chat/completions' in endpoint or '/chat/completions' in endpoint:
-        api_url = endpoint.rstrip('/')
-    else:
-        # Append standard OpenAI path
-        if not endpoint.endswith('/'):
-            endpoint += '/'
-        api_url = endpoint + 'v1/chat/completions'
+    # Piano/Cxense OpenWebUI uses /api/chat/completions (not /v1/chat/completions)
+    endpoint = endpoint.rstrip('/')
+    api_url = f'{endpoint}/api/chat/completions'
 
     headers = {
         'Authorization': f'Bearer {api_key}',
