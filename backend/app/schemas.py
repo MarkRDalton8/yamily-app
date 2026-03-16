@@ -171,7 +171,7 @@ class CommentCreate(BaseModel):
 class CommentResponse(BaseModel):
     id: int
     event_id: int
-    user_id: int
+    user_id: Optional[int] = None  # None for AI comments
     comment_text: str
     photo_url: Optional[str] = None
     created_at: datetime
@@ -179,6 +179,9 @@ class CommentResponse(BaseModel):
     downvotes: int
     commenter_name: str  # Pseudonym of the commenter
     user_vote: Optional[int] = None  # Current user's vote (1, -1, or None)
+    is_ai_generated: bool = False
+    ai_persona_type: Optional[str] = None
+    ai_persona_name: Optional[str] = None
 
     class Config:
         from_attributes = True

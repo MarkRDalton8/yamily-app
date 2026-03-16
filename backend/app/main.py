@@ -1035,7 +1035,10 @@ def create_comment(
         "upvotes": db_comment.upvotes,
         "downvotes": db_comment.downvotes,
         "commenter_name": guest.display_name,  # Use pseudonym!
-        "user_vote": None
+        "user_vote": None,
+        "is_ai_generated": bool(db_comment.is_ai_generated),
+        "ai_persona_type": db_comment.ai_persona_type,
+        "ai_persona_name": db_comment.ai_persona_name
     }
 
 
@@ -1094,8 +1097,11 @@ def get_comments(
             "created_at": comment.created_at,
             "upvotes": comment.upvotes,
             "downvotes": comment.downvotes,
-            "commenter_name": commenter_guest.display_name if commenter_guest else "Unknown",
-            "user_vote": user_votes.get(comment.id)
+            "commenter_name": commenter_guest.display_name if commenter_guest else (comment.ai_persona_name if comment.is_ai_generated else "Unknown"),
+            "user_vote": user_votes.get(comment.id),
+            "is_ai_generated": bool(comment.is_ai_generated),
+            "ai_persona_type": comment.ai_persona_type,
+            "ai_persona_name": comment.ai_persona_name
         })
 
     return result
