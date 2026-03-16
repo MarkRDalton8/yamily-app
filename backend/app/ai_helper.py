@@ -29,13 +29,25 @@ def generate_ai_review(system_prompt: str) -> dict:
 
     try:
         if openwebui_endpoint and openwebui_key:
-            # Use OpenWebUI with OpenAI-compatible format
-            response_text = _call_openwebui(
-                endpoint=openwebui_endpoint,
-                api_key=openwebui_key,
-                model=openwebui_model or "claude-sonnet-4-20250514",
-                system_prompt=system_prompt
-            )
+            # Try OpenWebUI/OpenAI-compatible format first
+            try:
+                response_text = _call_openwebui(
+                    endpoint=openwebui_endpoint,
+                    api_key=openwebui_key,
+                    model=openwebui_model or "claude-sonnet-4-20250514",
+                    system_prompt=system_prompt
+                )
+            except Exception as openwebui_error:
+                # If OpenWebUI fails with 405, try Anthropic SDK with base_url
+                if "405" in str(openwebui_error):
+                    response_text = _call_anthropic_with_proxy(
+                        base_url=openwebui_endpoint,
+                        api_key=openwebui_key,
+                        model=openwebui_model or "claude-sonnet-4-20250514",
+                        system_prompt=system_prompt
+                    )
+                else:
+                    raise
         elif anthropic_key:
             # Use direct Anthropic API
             response_text = _call_anthropic(
@@ -69,10 +81,15 @@ def generate_ai_review(system_prompt: str) -> dict:
 
 def _call_openwebui(endpoint: str, api_key: str, model: str, system_prompt: str) -> str:
     """Call OpenWebUI using OpenAI-compatible API format."""
-    # Ensure endpoint ends with /v1/chat/completions
-    if not endpoint.endswith('/'):
-        endpoint += '/'
-    api_url = endpoint + 'v1/chat/completions'
+    # OpenWebUI might already include the full path, or might need v1/chat/completions appended
+    # Try to detect and handle both cases
+    if '/v1/chat/completions' in endpoint or '/chat/completions' in endpoint:
+        api_url = endpoint.rstrip('/')
+    else:
+        # Append standard OpenAI path
+        if not endpoint.endswith('/'):
+            endpoint += '/'
+        api_url = endpoint + 'v1/chat/completions'
 
     headers = {
         'Authorization': f'Bearer {api_key}',
@@ -95,11 +112,20 @@ def _call_openwebui(endpoint: str, api_key: str, model: str, system_prompt: str)
         'temperature': 0.7
     }
 
-    response = requests.post(api_url, headers=headers, json=payload, timeout=30)
-    response.raise_for_status()
-
-    data = response.json()
-    return data['choices'][0]['message']['content'].strip()
+    try:
+        response = requests.post(api_url, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        return data['choices'][0]['message']['content'].strip()
+    except requests.exceptions.HTTPError as e:
+        # Log detailed error for debugging
+        error_detail = f"HTTP {e.response.status_code} from {api_url}"
+        try:
+            error_body = e.response.json()
+            error_detail += f": {error_body}"
+        except:
+            error_detail += f": {e.response.text}"
+        raise Exception(error_detail)
 
 
 def _call_anthropic(api_key: str, system_prompt: str) -> str:
@@ -110,6 +136,27 @@ def _call_anthropic(api_key: str, system_prompt: str) -> str:
 
     message = client.messages.create(
         model="claude-sonnet-4-20250514",
+        max_tokens=1000,
+        system=system_prompt,
+        messages=[
+            {
+                "role": "user",
+                "content": "Generate the review now in the JSON format specified. Output ONLY the JSON, nothing else."
+            }
+        ]
+    )
+
+    return message.content[0].text.strip()
+
+
+def _call_anthropic_with_proxy(base_url: str, api_key: str, model: str, system_prompt: str) -> str:
+    """Call Anthropic API through a proxy endpoint."""
+    from anthropic import Anthropic
+
+    client = Anthropic(api_key=api_key, base_url=base_url)
+
+    message = client.messages.create(
+        model=model,
         max_tokens=1000,
         system=system_prompt,
         messages=[
