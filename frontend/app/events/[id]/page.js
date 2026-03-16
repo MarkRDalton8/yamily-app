@@ -49,6 +49,12 @@ export default function EventDetail() {
   const [changingStatus, setChangingStatus] = useState(false)
   const [isHost, setIsHost] = useState(false)
 
+  // STATE - Track AI review generation
+  const [showAIModal, setShowAIModal] = useState(false)
+  const [selectedPersona, setSelectedPersona] = useState('karen')
+  const [personaName, setPersonaName] = useState('')
+  const [generatingAI, setGeneratingAI] = useState(false)
+
   // FUNCTION - Handle API errors (especially 401 token expiration)
   const handleApiError = (response) => {
     if (response.status === 401) {
@@ -417,6 +423,53 @@ export default function EventDetail() {
     }
   }
 
+  // FUNCTION - Generate AI review
+  const handleGenerateAIReview = async () => {
+    if (!personaName.trim()) {
+      alert('Please enter a name for your AI reviewer')
+      return
+    }
+
+    try {
+      setGeneratingAI(true)
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${API_URL}/events/${eventId}/ai-review`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          persona_type: selectedPersona,
+          persona_name: personaName
+        })
+      })
+
+      if (!response.ok) {
+        if (handleApiError(response)) return
+        const error = await response.json()
+        alert(error.detail || 'Failed to generate AI review')
+        return
+      }
+
+      const data = await response.json()
+      alert(`AI review generated! ${personaName} has shared their thoughts. 🤖`)
+
+      // Close modal and reset
+      setShowAIModal(false)
+      setPersonaName('')
+      setSelectedPersona('karen')
+
+      // Reload reviews to show new AI review
+      loadEventAndReviews()
+    } catch (err) {
+      alert('Error generating AI review')
+      console.error(err)
+    } finally {
+      setGeneratingAI(false)
+    }
+  }
+
   // EFFECT - Load comments when Feed tab is active
   useEffect(() => {
     if (activeTab === 'feed') {
@@ -692,12 +745,20 @@ export default function EventDetail() {
                     The event has ended! How was it? Leave your honest review.
                   </p>
                 </div>
-                <button
-                  onClick={() => router.push(`/events/${eventId}/review`)}
-                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition-colors shadow-md hover:shadow-lg"
-                >
-                  Write Review
-                </button>
+                <div className="flex gap-3 flex-wrap">
+                  <button
+                    onClick={() => router.push(`/events/${eventId}/review`)}
+                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition-colors shadow-md hover:shadow-lg"
+                  >
+                    Write Review
+                  </button>
+                  <button
+                    onClick={() => setShowAIModal(true)}
+                    className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold transition-colors shadow-md hover:shadow-lg"
+                  >
+                    🤖 Add AI Review
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -742,17 +803,26 @@ export default function EventDetail() {
                 {/* Reviewer Header with Avatar */}
                 <div className="flex items-start gap-4 mb-4">
                   {/* Avatar */}
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                    {(review.display_name || 'A').charAt(0).toUpperCase()}
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0 ${
+                    review.is_ai_generated
+                      ? 'bg-gradient-to-br from-purple-500 to-pink-500'
+                      : 'bg-gradient-to-br from-blue-500 to-purple-500'
+                  }`}>
+                    {review.is_ai_generated ? '🤖' : (review.display_name || 'A').charAt(0).toUpperCase()}
                   </div>
 
                   <div className="flex-1">
                     <div className="flex items-baseline justify-between flex-wrap gap-2">
-                      <div>
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-gray-900 text-lg">
                           {review.display_name || 'Anonymous'}
                         </span>
-                        <span className="text-gray-700 text-sm ml-3">
+                        {review.is_ai_generated && (
+                          <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-2 py-1 rounded-full">
+                            🤖 AI Generated
+                          </span>
+                        )}
+                        <span className="text-gray-700 text-sm">
                           {new Date(review.created_at).toLocaleDateString()}
                         </span>
                       </div>
@@ -1044,6 +1114,135 @@ export default function EventDetail() {
             )}
             </>
             )}
+          </div>
+        )}
+
+        {/* AI Review Generation Modal */}
+        {showAIModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 rounded-t-lg">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2">Generate AI Review 🤖</h2>
+                    <p className="text-purple-100">Add some chaos with an AI-generated character review</p>
+                  </div>
+                  <button
+                    onClick={() => setShowAIModal(false)}
+                    className="text-white hover:text-gray-200 text-3xl leading-none"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6">
+                {/* Persona Name Input */}
+                <div className="mb-6">
+                  <label className="block text-gray-800 font-semibold mb-2">
+                    Character Name
+                  </label>
+                  <input
+                    type="text"
+                    value={personaName}
+                    onChange={(e) => setPersonaName(e.target.value)}
+                    placeholder='e.g., "Aunt Susan" or "Uncle Mike"'
+                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
+                  />
+                  <p className="text-sm text-gray-700 mt-1">Give your AI reviewer a name - it'll sign the review with this</p>
+                </div>
+
+                {/* Persona Selection */}
+                <div className="mb-6">
+                  <label className="block text-gray-800 font-semibold mb-3">
+                    Choose Personality
+                  </label>
+                  <div className="space-y-3">
+                    {/* Karen Option */}
+                    <div
+                      onClick={() => setSelectedPersona('karen')}
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                        selectedPersona === 'karen'
+                          ? 'border-purple-600 bg-purple-50'
+                          : 'border-gray-200 hover:border-purple-300'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="text-3xl">💁‍♀️</div>
+                        <div className="flex-1">
+                          <div className="font-bold text-gray-900 mb-1">The Karen</div>
+                          <p className="text-sm text-gray-700">Passive-aggressive Minnesota Nice energy. Backhanded compliments. Usually 3-4 stars. "Oh honey..."</p>
+                        </div>
+                        {selectedPersona === 'karen' && (
+                          <div className="text-purple-600 font-bold">✓</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Lightweight Option */}
+                    <div
+                      onClick={() => setSelectedPersona('lightweight')}
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                        selectedPersona === 'lightweight'
+                          ? 'border-purple-600 bg-purple-50'
+                          : 'border-gray-200 hover:border-purple-300'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="text-3xl">🍺</div>
+                        <div className="flex-1">
+                          <div className="font-bold text-gray-900 mb-1">The Lightweight</div>
+                          <p className="text-sm text-gray-700">ALWAYS drunk. VERY emotional. Everything is 5 stars. "I LOVE YOU GUYS!!!" Oversharing guaranteed.</p>
+                        </div>
+                        {selectedPersona === 'lightweight' && (
+                          <div className="text-purple-600 font-bold">✓</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Gen Z Option */}
+                    <div
+                      onClick={() => setSelectedPersona('genz')}
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                        selectedPersona === 'genz'
+                          ? 'border-purple-600 bg-purple-50'
+                          : 'border-gray-200 hover:border-purple-300'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="text-3xl">📱</div>
+                        <div className="flex-1">
+                          <div className="font-bold text-gray-900 mb-1">The Gen Z</div>
+                          <p className="text-sm text-gray-700">Chaotic energy. Heavy slang. Only 1 or 5 stars. "ngl this was lowkey bussin fr fr 💀"</p>
+                        </div>
+                        {selectedPersona === 'genz' && (
+                          <div className="text-purple-600 font-bold">✓</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowAIModal(false)}
+                    className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleGenerateAIReview}
+                    disabled={generatingAI || !personaName.trim()}
+                    className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 font-semibold transition-colors"
+                  >
+                    {generatingAI ? 'Generating...' : 'Generate Review'}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
