@@ -183,91 +183,84 @@ class YamilyAITester:
             return False
     
     def upload_test_photo(self):
-        """Step 4: Upload a test photo"""
+        """Step 4: Upload a test photo as a comment"""
         print_step(4, "Uploading Test Photo")
-        
+
         # Create a simple test image
         img = Image.new('RGB', (400, 300), color=(73, 109, 137))
-        
+
         # Add some text to make it interesting
-        from PIL import ImageDraw, ImageFont
+        from PIL import ImageDraw
         draw = ImageDraw.Draw(img)
-        
+
         # Draw some shapes
         draw.rectangle([50, 50, 350, 250], outline=(255, 255, 0), width=5)
         draw.ellipse([150, 100, 250, 200], fill=(255, 100, 100))
-        
-        # Convert to bytes
+
+        # Convert to base64 data URL
         img_byte_arr = BytesIO()
-        img.save(img_byte_arr, format='JPEG')
+        img.save(img_byte_arr, format='JPEG', quality=85)
         img_byte_arr.seek(0)
-        
+
+        img_base64 = base64.b64encode(img_byte_arr.read()).decode('utf-8')
+        photo_data_url = f"data:image/jpeg;base64,{img_base64}"
+
         print_info("Created test photo (400x300 with shapes)")
-        
-        # Upload photo
-        files = {
-            'photo': ('test_photo.jpg', img_byte_arr, 'image/jpeg')
+        print_info(f"Photo size: {len(photo_data_url)} characters")
+
+        # Post as a comment with photo
+        comment_data = {
+            "comment_text": "Check out this cool photo! 📸",
+            "photo_url": photo_data_url
         }
-        
-        # Remove Content-Type header for file upload
-        upload_headers = {
-            'Authorization': f'Bearer {self.token}'
-        }
-        
+
         response = requests.post(
-            f"{self.api_url}/events/{self.event_id}/feed/photo",
-            headers=upload_headers,
-            files=files
+            f"{self.api_url}/events/{self.event_id}/comments",
+            headers=self.headers,
+            json=comment_data
         )
-        
+
         if response.status_code == 200 or response.status_code == 201:
             result = response.json()
-            print_success("Photo uploaded successfully!")
-            
-            if 'photo_url' in result:
-                print_info(f"Photo URL: {result['photo_url']}")
-                return result.get('id'), result['photo_url']
-            elif 'id' in result:
-                return result['id'], None
-            return True, None
+            print_success("Photo comment posted successfully!")
+            print_info(f"Comment ID: {result.get('id')}")
+
+            return result.get('id'), result.get('photo_url')
         else:
             print_error(f"Failed to upload photo: {response.status_code}")
             print_error(f"Response: {response.text}")
             return False, None
     
-    def generate_ai_photo_reaction(self, photo_id, persona_name, persona_type):
-        """Step 5: Generate AI photo reaction"""
-        print_step(5, f"Generating AI Photo Reaction from {persona_name}")
-        
-        if not photo_id:
-            print_warning("No photo ID available, skipping photo reaction")
+    def generate_ai_photo_reaction(self):
+        """Step 5: Generate AI photo reactions via background job"""
+        print_step(5, "Triggering AI Photo Reactions")
+
+        if not self.event_id:
+            print_warning("No event ID available, skipping photo reaction")
             return False
-        
-        print_info(f"Attempting to generate reaction from {persona_name} ({persona_type})")
-        
-        # Try to call background job manually
-        # This might not work from external script, but we can try
-        
-        admin_data = {
-            "admin_password": "your_admin_password_here"  # User needs to provide this
-        }
-        
+
+        print_info("Calling background job to generate AI photo reactions...")
+
+        # Call the admin endpoint to process AI guests (handles photo reactions)
         response = requests.post(
-            f"{self.api_url}/admin/process-ai-guests",
-            headers={'Content-Type': 'application/json'},
-            json=admin_data
+            f"{self.api_url}/admin/process-ai-guests"
         )
-        
+
         if response.status_code == 200:
             result = response.json()
             print_success("Background job executed successfully!")
-            print_info(f"Text comments created: {result.get('text_comments_created', 0)}")
-            print_info(f"Photo reactions created: {result.get('photo_reactions_created', 0)}")
-            return True
+            print_info(f"Comments generated: {result.get('comments_generated', 0)}")
+            print_info(f"Photo reactions generated: {result.get('photo_reactions_generated', 0)}")
+
+            if result.get('errors'):
+                print_warning(f"Errors encountered: {len(result['errors'])}")
+                for error in result['errors']:
+                    print_warning(f"  - {error}")
+
+            return result.get('photo_reactions_generated', 0) > 0
         else:
-            print_warning("Could not execute background job (may need admin password)")
-            print_info(f"Response: {response.status_code}")
-            print_info("Photo reaction would normally happen via cron job")
+            print_error(f"Failed to trigger background job: {response.status_code}")
+            print_error(f"Response: {response.text}")
             return False
     
     def end_event_and_trigger_reviews(self):
@@ -396,10 +389,10 @@ class YamilyAITester:
         # Step 4: Upload photo
         photo_id, photo_url = self.upload_test_photo()
         time.sleep(1)
-        
-        # Step 5: Generate photo reactions (optional - may not work without admin password)
+
+        # Step 5: Generate AI photo reactions
         if photo_id:
-            self.generate_ai_photo_reaction(photo_id, "Test Karen", "karen")
+            self.generate_ai_photo_reaction()
             time.sleep(1)
         
         # Step 6: End event and trigger auto-reviews
