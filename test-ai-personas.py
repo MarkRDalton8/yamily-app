@@ -78,8 +78,8 @@ class YamilyAITester:
         """Step 1: Create an event with invited AI personas"""
         print_step(1, "Creating Event with AI Personas")
         
-        # Event data
-        event_date = (datetime.now() + timedelta(hours=1)).isoformat()
+        # Event data - set to 1 hour ago so AI comments are immediately scheduled
+        event_date = (datetime.now() - timedelta(hours=1)).isoformat()
         
         event_data = {
             "title": f"AI Persona Test Event - {datetime.now().strftime('%Y-%m-%d %H:%M')}",
@@ -112,6 +112,7 @@ class YamilyAITester:
         }
         
         print_info(f"Event name: {event_data['title']}")
+        print_info(f"Event date: {event_date} (set to past for immediate testing)")
         print_info(f"Inviting AI guests: Test Karen (karen), Test Gen Z (genz)")
         
         # Create event
@@ -153,45 +154,32 @@ class YamilyAITester:
             print_error(f"Response: {response.text}")
             return False
     
-    def post_ai_text_comment(self, persona_name, persona_type):
-        """Step 3: Post AI text comment to live feed"""
-        print_step(3, f"Posting AI Text Comment from {persona_name}")
-        
-        # Simulate what the background job does
-        comments_by_type = {
-            "karen": "Oh honey, this test event is... certainly something! Bless their hearts for trying. But what do I know!",
-            "genz": "ngl this test is lowkey chaotic and i'm here for it fr fr 💀",
-            "lightweight": "This is ALREADY the BEST test event EVER!!! I LOVE testing!!!"
-        }
-        
-        comment_text = comments_by_type.get(persona_type, "Having a great time!")
-        
-        # Post comment to feed
-        # Note: We need an endpoint that allows posting AI comments
-        # For now, we'll use a workaround - post as regular comment with special format
-        
-        feed_data = {
-            "item_type": "comment",
-            "comment_text": f"[AI:{persona_name}] {comment_text}",
-            "is_ai_generated": True,
-            "ai_persona_type": persona_type,
-            "ai_persona_name": persona_name
-        }
-        
-        print_info(f"Comment: {comment_text}")
-        
+    def trigger_ai_comments(self):
+        """Step 3: Trigger AI comment generation via background job"""
+        print_step(3, "Triggering AI Comment Generation")
+
+        print_info("Calling background job to generate scheduled AI comments...")
+
+        # Call the admin endpoint to process AI guests
         response = requests.post(
-            f"{self.api_url}/events/{self.event_id}/feed",
-            headers=self.headers,
-            json=feed_data
+            f"{self.api_url}/admin/process-ai-guests"
         )
-        
-        if response.status_code == 200 or response.status_code == 201:
-            print_success(f"AI comment posted from {persona_name}")
-            return True
+
+        if response.status_code == 200:
+            result = response.json()
+            print_success("Background job executed successfully!")
+            print_info(f"Comments generated: {result.get('comments_generated', 0)}")
+            print_info(f"Photo reactions generated: {result.get('photo_reactions_generated', 0)}")
+
+            if result.get('errors'):
+                print_warning(f"Errors encountered: {len(result['errors'])}")
+                for error in result['errors']:
+                    print_warning(f"  - {error}")
+
+            return result.get('comments_generated', 0) > 0
         else:
-            print_warning(f"Could not post AI comment (endpoint may not support AI flag)")
-            print_info(f"Response: {response.status_code} - {response.text}")
+            print_error(f"Failed to trigger background job: {response.status_code}")
+            print_error(f"Response: {response.text}")
             return False
     
     def upload_test_photo(self):
@@ -352,25 +340,27 @@ class YamilyAITester:
                 print_warning("No AI-generated reviews found")
                 print_info("Expected reviews from: " + ", ".join(self.ai_guest_names))
         
-        # Get feed items
+        # Get comments
         response = requests.get(
-            f"{self.api_url}/events/{self.event_id}/feed",
+            f"{self.api_url}/events/{self.event_id}/comments",
             headers=self.headers
         )
-        
+
         if response.status_code == 200:
-            feed_items = response.json()
-            ai_comments = [item for item in feed_items 
-                          if item.get('item_type') == 'comment' and item.get('is_ai_generated')]
-            
-            print_info(f"Total feed items: {len(feed_items)}")
+            comments = response.json()
+            ai_comments = [c for c in comments if c.get('is_ai_generated')]
+
+            print_info(f"Total comments: {len(comments)}")
             print_info(f"AI-generated comments: {len(ai_comments)}")
-            
+
             if ai_comments:
                 print_success(f"✅ Found {len(ai_comments)} AI-generated comment(s)!")
                 for comment in ai_comments:
                     persona_name = comment.get('ai_persona_name', 'Unknown')
                     print_info(f"  - {persona_name}: {comment.get('comment_text', '')[:80]}...")
+            else:
+                print_warning("No AI-generated comments found")
+                print_info("Expected comments from: " + ", ".join(self.ai_guest_names))
         
         return True
     
@@ -398,13 +388,11 @@ class YamilyAITester:
             return False
         
         time.sleep(1)
-        
-        # Step 3: Post AI text comments
-        self.post_ai_text_comment("Test Karen", "karen")
-        time.sleep(1)
-        self.post_ai_text_comment("Test Gen Z", "genz")
-        time.sleep(1)
-        
+
+        # Step 3: Trigger AI comment generation
+        self.trigger_ai_comments()
+        time.sleep(2)
+
         # Step 4: Upload photo
         photo_id, photo_url = self.upload_test_photo()
         time.sleep(1)
