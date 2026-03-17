@@ -722,7 +722,7 @@ export default function EventDetail() {
                 <span className="text-2xl">⭐</span>
                 <span>Reviews</span>
                 <span className="text-sm bg-gray-200 text-gray-700 px-2 py-1 rounded-full">
-                  {reviews.length}
+                  {event?.review_count || 0}
                 </span>
               </div>
             </button>
@@ -741,7 +741,7 @@ export default function EventDetail() {
                   <span className="text-2xl">💬</span>
                   <span>Live Feed</span>
                   <span className="text-sm bg-gray-200 text-gray-700 px-2 py-1 rounded-full">
-                    {comments.length}
+                    {event?.comment_count || 0}
                   </span>
                 </div>
               </button>
