@@ -43,6 +43,7 @@ export default function EventDetail() {
 
   // STATE - Track guests
   const [guests, setGuests] = useState([])
+  const [aiGuests, setAiGuests] = useState([])
 
   // STATE - Track event status and lifecycle
   const [eventStatus, setEventStatus] = useState('upcoming') // upcoming, live, ended
@@ -102,6 +103,7 @@ export default function EventDetail() {
       const eventData = await eventResponse.json()
       setEvent(eventData)
       setGuests(eventData.guests || [])
+      setAiGuests(eventData.ai_guests || [])
       setEventStatus(eventData.status || 'upcoming')
 
       // Check if current user is the host
@@ -621,9 +623,9 @@ export default function EventDetail() {
 
               {/* Stats Badge */}
               <div className="bg-white rounded-lg p-4 text-center min-w-[120px] shadow-lg">
-                <div className="text-3xl font-bold text-gray-800">{guests.length}</div>
+                <div className="text-3xl font-bold text-gray-800">{guests.length + aiGuests.length}</div>
                 <div className="text-sm text-gray-700 font-medium">
-                  {guests.length === 1 ? 'Guest' : 'Guests'}
+                  {(guests.length + aiGuests.length) === 1 ? 'Guest' : 'Guests'}
                 </div>
               </div>
             </div>
@@ -661,7 +663,7 @@ export default function EventDetail() {
 
         {/* Who's Coming */}
 <div className="mb-6">
-  <h3 className="text-xl font-bold text-gray-900 mb-4">👥 Who's Coming ({guests.length})</h3>
+  <h3 className="text-xl font-bold text-gray-900 mb-4">👥 Who's Coming ({guests.length + aiGuests.length})</h3>
   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
     {guests.map(guest => {
       const isHost = guest.user_id === event?.host?.id
@@ -690,6 +692,19 @@ export default function EventDetail() {
         </div>
       )
     })}
+    {aiGuests.map(aiGuest => (
+      <div key={`ai-${aiGuest.id}`} className="text-center">
+        <div className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-2xl mx-auto mb-2 bg-gradient-to-br from-pink-500 to-rose-500">
+          🤖
+        </div>
+        <div className="text-sm font-medium text-gray-800">
+          {aiGuest.ai_persona_name}
+        </div>
+        <div className="text-xs text-pink-600 font-semibold mt-1">
+          🤖 AI Guest
+        </div>
+      </div>
+    ))}
   </div>
 </div>
         {/* Enhanced Tab Navigation */}

@@ -322,6 +322,11 @@ def get_event_detail(
         models.EventGuest.event_id == event_id
     ).all()
 
+    # Get AI guests
+    ai_guests = db.query(models.EventAIGuest).filter(
+        models.EventAIGuest.event_id == event_id
+    ).all()
+
     # Get review count
     review_count = db.query(models.Review).filter(models.Review.event_id == event_id).count()
 
@@ -352,6 +357,15 @@ def get_event_detail(
                 "joined_at": guest.joined_at
             }
             for guest in guests
+        ],
+        "ai_guests": [
+            {
+                "id": ai_guest.id,
+                "ai_persona_type": ai_guest.ai_persona_type,
+                "ai_persona_name": ai_guest.ai_persona_name,
+                "is_ai": True
+            }
+            for ai_guest in ai_guests
         ],
         "categories": [
             {
