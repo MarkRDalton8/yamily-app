@@ -483,6 +483,43 @@ export default function EventDetail() {
     }
   }, [activeTab])
 
+  // EFFECT - Poll AI guest processor when event is live
+  useEffect(() => {
+    // Only poll if event is live
+    if (eventStatus !== 'live') {
+      return
+    }
+
+    // Function to trigger AI guest processing
+    const triggerAIProcessing = async () => {
+      try {
+        // Call the background job endpoint
+        await fetch(`${API_URL}/admin/process-ai-guests`, {
+          method: 'POST'
+        })
+
+        // Refresh comments if we're on the feed tab
+        if (activeTab === 'feed') {
+          fetchComments()
+        }
+      } catch (err) {
+        console.error('Error triggering AI processing:', err)
+        // Fail silently - don't disrupt user experience
+      }
+    }
+
+    // Trigger immediately when event goes live
+    triggerAIProcessing()
+
+    // Set up interval to poll every 5 minutes (300000 ms)
+    const intervalId = setInterval(triggerAIProcessing, 5 * 60 * 1000)
+
+    // Cleanup interval when component unmounts or event status changes
+    return () => {
+      clearInterval(intervalId)
+    }
+  }, [eventStatus, activeTab])
+
   // RENDER - Loading state
   if (loading) {
     return (
@@ -1242,6 +1279,90 @@ export default function EventDetail() {
                           <p className="text-sm text-gray-700">Chaotic energy. Heavy slang. Only 1 or 5 stars. "ngl this was lowkey bussin fr fr 💀"</p>
                         </div>
                         {selectedPersona === 'genz' && (
+                          <div className="text-purple-600 font-bold">✓</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Oversharer Option */}
+                    <div
+                      onClick={() => setSelectedPersona('oversharer')}
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                        selectedPersona === 'oversharer'
+                          ? 'border-purple-600 bg-purple-50'
+                          : 'border-gray-200 hover:border-purple-300'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="text-3xl">🤐</div>
+                        <div className="flex-1">
+                          <div className="font-bold text-gray-900 mb-1">The Oversharer</div>
+                          <p className="text-sm text-gray-700">TMI at every gathering. Therapy-speak. Shares WAY too much. "This reminds me of my colonoscopy..."</p>
+                        </div>
+                        {selectedPersona === 'oversharer' && (
+                          <div className="text-purple-600 font-bold">✓</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Planner Option */}
+                    <div
+                      onClick={() => setSelectedPersona('planner')}
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                        selectedPersona === 'planner'
+                          ? 'border-purple-600 bg-purple-50'
+                          : 'border-gray-200 hover:border-purple-300'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="text-3xl">📋</div>
+                        <div className="flex-1">
+                          <div className="font-bold text-gray-900 mb-1">The Planner</div>
+                          <p className="text-sm text-gray-700">Type-A control freak. Passive-aggressive about chaos. "We're 17 minutes behind schedule..."</p>
+                        </div>
+                        {selectedPersona === 'planner' && (
+                          <div className="text-purple-600 font-bold">✓</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Food Critic Option */}
+                    <div
+                      onClick={() => setSelectedPersona('foodcritic')}
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                        selectedPersona === 'foodcritic'
+                          ? 'border-purple-600 bg-purple-50'
+                          : 'border-gray-200 hover:border-purple-300'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="text-3xl">🍽️</div>
+                        <div className="flex-1">
+                          <div className="font-bold text-gray-900 mb-1">The Food Critic</div>
+                          <p className="text-sm text-gray-700">Gordon Ramsay meets pretentious foodie. Technical critiques. "This is criminally overbaked..."</p>
+                        </div>
+                        {selectedPersona === 'foodcritic' && (
+                          <div className="text-purple-600 font-bold">✓</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Drama Detector Option */}
+                    <div
+                      onClick={() => setSelectedPersona('dramadetector')}
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                        selectedPersona === 'dramadetector'
+                          ? 'border-purple-600 bg-purple-50'
+                          : 'border-gray-200 hover:border-purple-300'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="text-3xl">👀</div>
+                        <div className="flex-1">
+                          <div className="font-bold text-gray-900 mb-1">The Drama Detector</div>
+                          <p className="text-sm text-gray-700">Notices ALL the tension. Reality TV narrator energy. "Did anyone else notice the ENERGY...?"</p>
+                        </div>
+                        {selectedPersona === 'dramadetector' && (
                           <div className="text-purple-600 font-bold">✓</div>
                         )}
                       </div>

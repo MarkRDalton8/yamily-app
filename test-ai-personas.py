@@ -64,9 +64,10 @@ def print_warning(msg):
     print(f"{Colors.WARNING}⚠️  {msg}{Colors.ENDC}")
 
 class YamilyAITester:
-    def __init__(self, api_url, token):
+    def __init__(self, api_url, token, keep_live=False):
         self.api_url = api_url.rstrip('/')
         self.token = token
+        self.keep_live = keep_live
         self.headers = {
             'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'
@@ -107,13 +108,35 @@ class YamilyAITester:
                 {
                     "ai_persona_type": "genz",
                     "ai_persona_name": "Test Gen Z"
+                },
+                {
+                    "ai_persona_type": "oversharer",
+                    "ai_persona_name": "Test Linda"
+                },
+                {
+                    "ai_persona_type": "planner",
+                    "ai_persona_name": "Test Monica"
+                },
+                {
+                    "ai_persona_type": "foodcritic",
+                    "ai_persona_name": "Test Gordon"
+                },
+                {
+                    "ai_persona_type": "dramadetector",
+                    "ai_persona_name": "Test Sherlock"
                 }
             ]
         }
         
         print_info(f"Event name: {event_data['title']}")
         print_info(f"Event date: {event_date} (set to past for immediate testing)")
-        print_info(f"Inviting AI guests: Test Karen (karen), Test Gen Z (genz)")
+        print_info(f"Inviting 7 AI guests:")
+        print_info(f"  - Test Karen (karen)")
+        print_info(f"  - Test Gen Z (genz)")
+        print_info(f"  - Test Linda (oversharer) ← NEW!")
+        print_info(f"  - Test Monica (planner) ← NEW!")
+        print_info(f"  - Test Gordon (foodcritic) ← NEW!")
+        print_info(f"  - Test Sherlock (dramadetector) ← NEW!")
         
         # Create event
         response = requests.post(
@@ -125,11 +148,13 @@ class YamilyAITester:
         if response.status_code == 200 or response.status_code == 201:
             result = response.json()
             self.event_id = result['id']
-            self.ai_guest_names = ['Test Karen', 'Test Gen Z']
+            self.ai_guest_names = ['Test Karen', 'Test Gen Z', 'Test Linda', 'Test Monica', 'Test Gordon', 'Test Sherlock']
             
             print_success(f"Event created successfully!")
             print_info(f"Event ID: {self.event_id}")
-            print_info(f"Event URL: https://yamily.app/events/{self.event_id}")
+            # Determine frontend URL based on API URL
+            frontend_url = "http://localhost:3000" if "localhost" in self.api_url else "https://yamily.app"
+            print_info(f"Event URL: {frontend_url}/events/{self.event_id}")
             return True
         else:
             print_error(f"Failed to create event: {response.status_code}")
@@ -394,29 +419,96 @@ class YamilyAITester:
         if photo_id:
             self.generate_ai_photo_reaction()
             time.sleep(1)
-        
-        # Step 6: End event and trigger auto-reviews
-        if not self.end_event_and_trigger_reviews():
-            print_error("Test failed at Step 6")
-            return False
-        
-        time.sleep(2)
-        
-        # Step 7: Verify results
-        self.verify_results()
-        
+
+        # Step 6: End event and trigger auto-reviews (conditional)
+        if self.keep_live:
+            print_step(6, "Skipping Event End (--keep-live flag set)")
+            print_info("Event will remain in LIVE status for admin dashboard testing")
+            print_warning("Note: AI auto-reviews will NOT be generated (only triggered on event end)")
+        else:
+            if not self.end_event_and_trigger_reviews():
+                print_error("Test failed at Step 6")
+                return False
+            time.sleep(2)
+
+            # Step 7: Verify results (only if event ended)
+            self.verify_results()
+
         # Final summary
         print(f"\n{Colors.BOLD}{Colors.OKGREEN}")
         print("="*60)
         print("  TEST COMPLETE!")
         print("="*60)
         print(f"{Colors.ENDC}\n")
-        
+
+        # Determine frontend URL based on API URL
+        frontend_url = "http://localhost:3000" if "localhost" in self.api_url else "https://yamily.app"
+
         print_info(f"Event ID: {self.event_id}")
-        print_info(f"Event URL: https://yamily.app/events/{self.event_id}")
-        print_info(f"View this event to see all AI persona activity!")
-        
+        print_info(f"Event URL: {frontend_url}/events/{self.event_id}")
+
+        if self.keep_live:
+            print_info(f"Admin Dashboard: {frontend_url}/admin/events")
+            print_success("Event is LIVE! Check the admin dashboard to see it in action.")
+        else:
+            print_info(f"View this event to see all AI persona activity!")
+
         return True
+
+def create_test_user_and_login(api_url):
+    """Create a test user and get auth token for local testing"""
+    print_step(0, "Setting Up Test User (Local Testing)")
+
+    # Generate unique test user credentials
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+    test_email = f"test_{timestamp}@example.com"
+    test_password = "TestPassword123!"
+    test_username = f"TestUser{timestamp}"
+    test_name = f"Test User {timestamp}"
+
+    print_info(f"Creating test user: {test_email}")
+
+    # Register user
+    register_data = {
+        "email": test_email,
+        "username": test_username,
+        "name": test_name,
+        "password": test_password
+    }
+
+    response = requests.post(
+        f"{api_url}/register",
+        json=register_data
+    )
+
+    if response.status_code not in [200, 201]:
+        print_error(f"Failed to register test user: {response.status_code}")
+        print_error(f"Response: {response.text}")
+        return None
+
+    print_success("Test user registered!")
+
+    # Login to get token
+    login_data = {
+        "username": test_email,
+        "password": test_password
+    }
+
+    response = requests.post(
+        f"{api_url}/login",
+        data=login_data  # FastAPI OAuth2 uses form data, not JSON
+    )
+
+    if response.status_code == 200:
+        result = response.json()
+        token = result.get('access_token')
+        print_success("Logged in successfully!")
+        print_info(f"Auth token obtained")
+        return token
+    else:
+        print_error(f"Failed to login: {response.status_code}")
+        print_error(f"Response: {response.text}")
+        return None
 
 def main():
     parser = argparse.ArgumentParser(
@@ -424,32 +516,63 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  # Test locally (easiest - auto-creates test user)
+  python test-ai-personas.py --local
+
+  # Or just run without arguments (defaults to local)
+  python test-ai-personas.py
+
+  # Keep event LIVE for admin dashboard testing
+  python test-ai-personas.py --local --keep-live
+
   # Test with production API
-  python test_ai_personas.py --api-url https://api.yamily.app --token YOUR_JWT_TOKEN
-  
-  # Test with local API
-  python test_ai_personas.py --api-url http://localhost:8000 --token YOUR_JWT_TOKEN
+  python test-ai-personas.py --api-url https://api.yamily.app --token YOUR_JWT_TOKEN
         """
     )
-    
+
     parser.add_argument(
         '--api-url',
-        required=True,
-        help='Yamily API URL (e.g., https://api.yamily.app)'
+        default='http://localhost:8000',
+        help='Yamily API URL (default: http://localhost:8000)'
     )
-    
+
     parser.add_argument(
         '--token',
-        required=True,
-        help='Your JWT authentication token'
+        help='Your JWT authentication token (optional for local testing)'
     )
-    
+
+    parser.add_argument(
+        '--local',
+        action='store_true',
+        help='Local testing mode: auto-create test user and login'
+    )
+
+    parser.add_argument(
+        '--keep-live',
+        action='store_true',
+        help='Keep event in LIVE status (do not end event) for admin dashboard testing'
+    )
+
     args = parser.parse_args()
-    
+
+    # Get or create auth token
+    token = args.token
+
+    if args.local or (not token and args.api_url == 'http://localhost:8000'):
+        print_info("Local testing mode: Creating test user automatically")
+        token = create_test_user_and_login(args.api_url)
+        if not token:
+            print_error("Failed to create test user and get token")
+            exit(1)
+    elif not token:
+        print_error("--token is required for non-local testing")
+        print_info("Use --local flag for automatic local testing")
+        exit(1)
+
     # Run the test
-    tester = YamilyAITester(args.api_url, args.token)
+    tester = YamilyAITester(args.api_url, token, keep_live=args.keep_live)
     success = tester.run_full_test()
-    
+
     exit(0 if success else 1)
 
 if __name__ == '__main__':

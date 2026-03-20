@@ -51,6 +51,8 @@ class Event(Base):
     invite_code = Column(String, unique=True, index=True, nullable=False)
     status = Column(String, default=EventStatus.UPCOMING.value)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    started_at = Column(DateTime, nullable=True)  # When status changed to "live"
+    ended_at = Column(DateTime, nullable=True)    # When status changed to "ended"
 
     # Relationships
     host = relationship("User", back_populates="hosted_events")

@@ -486,9 +486,13 @@ export default function Events() {
                   value={aiPersonaType}
                   onChange={(e) => setAiPersonaType(e.target.value)}
                 >
-                  <option value="karen">Karen (Passive-Aggressive)</option>
-                  <option value="lightweight">Lightweight (Always Drunk)</option>
-                  <option value="genz">Gen Z (Chaotic Slang)</option>
+                  <option value="karen">👵 Karen (Passive-Aggressive)</option>
+                  <option value="lightweight">🍷 Lightweight (Always Drunk)</option>
+                  <option value="genz">💀 Gen Z (Chaotic Slang)</option>
+                  <option value="oversharer">🤐 Oversharer (TMI Energy)</option>
+                  <option value="planner">📋 Planner (Type-A Control Freak)</option>
+                  <option value="foodcritic">🍽️ Food Critic (Gordon Ramsay Vibes)</option>
+                  <option value="dramadetector">👀 Drama Detector (Notices Everything)</option>
                 </select>
                 <input
                   type="text"

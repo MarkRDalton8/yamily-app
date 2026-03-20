@@ -11,6 +11,9 @@ export default function AdminEventsPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all') // all, upcoming, live, ended
   const [searchTerm, setSearchTerm] = useState('')
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [eventToDelete, setEventToDelete] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     fetchAllEvents()
@@ -42,6 +45,44 @@ export default function AdminEventsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function handleDeleteEvent(eventId) {
+    setDeleting(true)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${API_URL}/events/${eventId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        // Remove from local state
+        setEvents(events.filter(e => e.event.id !== eventId))
+        setDeleteModalOpen(false)
+        setEventToDelete(null)
+      } else {
+        const error = await response.json()
+        alert(`Failed to delete event: ${error.detail || 'Unknown error'}`)
+      }
+    } catch (err) {
+      console.error('Error deleting event:', err)
+      alert('Error deleting event')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  function formatDuration(minutes) {
+    if (!minutes) return 'N/A'
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    if (hours > 0) {
+      return `${hours}h ${mins}m`
+    }
+    return `${mins}m`
   }
 
   // Filter events
@@ -197,6 +238,17 @@ export default function AdminEventsPage() {
                   </h3>
                 </div>
 
+                {/* Host Info */}
+                <div className="px-6 pt-4">
+                  <div className="text-xs text-gray-600 mb-1">Host</div>
+                  <div className="text-sm font-semibold text-gray-900">
+                    {event.host_name}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    {event.host_email}
+                  </div>
+                </div>
+
                 {/* Stats */}
                 <div className="p-6">
                   <div className="grid grid-cols-2 gap-4 mb-4">
@@ -226,6 +278,22 @@ export default function AdminEventsPage() {
                     </div>
                   </div>
 
+                  {/* AI Guests & Duration */}
+                  <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-200">
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-pink-600">
+                        {summary.total_ai_guests || 0}
+                      </div>
+                      <div className="text-xs text-gray-600">AI Guests</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-indigo-600">
+                        {formatDuration(event.duration_minutes)}
+                      </div>
+                      <div className="text-xs text-gray-600">Duration</div>
+                    </div>
+                  </div>
+
                   {/* Average Ratings - Dynamic */}
                   {summary.total_reviews > 0 && summary.avg_ratings && (
                     <div className="mb-4 pb-4 border-b border-gray-200">
@@ -243,23 +311,80 @@ export default function AdminEventsPage() {
                   )}
 
                   {/* Actions */}
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/events/${event.id}`}
-                      className="flex-1 text-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Link
+                        href={`/events/${event.id}`}
+                        className="flex-1 text-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+                      >
+                        View Event
+                      </Link>
+                      <Link
+                        href={`/events/${event.id}/summary`}
+                        className="flex-1 text-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors"
+                      >
+                        Summary
+                      </Link>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setEventToDelete({ id: event.id, name: event.event_name })
+                        setDeleteModalOpen(true)
+                      }}
+                      className="w-full px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors"
                     >
-                      View Event
-                    </Link>
-                    <Link
-                      href={`/events/${event.id}/summary`}
-                      className="flex-1 text-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors"
-                    >
-                      Summary
-                    </Link>
+                      Delete Event
+                    </button>
                   </div>
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteModalOpen && eventToDelete && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                Delete Event?
+              </h2>
+              <p className="text-gray-700 mb-2">
+                Are you sure you want to delete <span className="font-semibold">{eventToDelete.name}</span>?
+              </p>
+              <p className="text-sm text-gray-600 mb-6">
+                This will permanently delete the event and all associated data including:
+              </p>
+              <ul className="text-sm text-gray-600 mb-6 list-disc list-inside space-y-1">
+                <li>All comments and photos</li>
+                <li>All reviews and ratings</li>
+                <li>Guest list and AI guests</li>
+                <li>Event categories</li>
+              </ul>
+              <p className="text-sm font-semibold text-red-600 mb-6">
+                This action cannot be undone.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setDeleteModalOpen(false)
+                    setEventToDelete(null)
+                  }}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeleteEvent(eventToDelete.id)}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50"
+                >
+                  {deleting ? 'Deleting...' : 'Delete Event'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

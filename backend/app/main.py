@@ -403,6 +403,7 @@ def start_event(
         raise HTTPException(status_code=400, detail="Event already started or ended")
 
     event.status = "live"
+    event.started_at = datetime.now(timezone.utc)  # Track when it started
     db.commit()
     db.refresh(event)
 
@@ -430,6 +431,7 @@ def end_event(
         raise HTTPException(status_code=400, detail="Event not currently live")
 
     event.status = "ended"
+    event.ended_at = datetime.now(timezone.utc)  # Track when it ended
     db.commit()
     db.refresh(event)
 
@@ -506,6 +508,42 @@ def end_event(
     db.commit()
 
     return {"message": "Event ended", "status": event.status}
+
+
+@app.delete("/events/{event_id}")
+def delete_event(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Delete an event and all related data (admin/host only).
+    Uses cascade delete from model relationships.
+    """
+    event = db.query(models.Event).filter(models.Event.id == event_id).first()
+
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    # Only host can delete their own event
+    if event.host_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Only the event host can delete this event"
+        )
+
+    # SQLAlchemy cascade relationships handle deletion of:
+    # - expected_guests
+    # - comments (and comment votes via cascade)
+    # - categories
+    # - ai_guests
+    # Reviews and EventGuest records are NOT cascade deleted (separate tables)
+
+    db.delete(event)
+    db.commit()
+
+    return {"message": "Event deleted successfully", "event_id": event_id}
+
 
 @app.get("/events/preview/{invite_code}", response_model=schemas.EventPreview)
 def get_event_preview(
@@ -1420,26 +1458,33 @@ def get_all_events_admin(
     current_user: models.User = Depends(get_current_user)
 ):
     """
-    Admin endpoint: Get all events with summary data.
+    Admin endpoint: Get all events with comprehensive summary data.
     For now, any logged-in user can access. Add admin check later if needed.
     """
-    
-    # Get all events
+
+    # Get all events with host info
     events = db.query(models.Event).order_by(models.Event.event_date.desc()).all()
-    
+
     result = []
     for event in events:
+        # Get host info
+        host = db.query(models.User).filter(models.User.id == event.host_id).first()
+
         # Get summary data for each event
         guests = db.query(models.EventGuest).filter(
             models.EventGuest.event_id == event.id
         ).all()
-        
+
         reviews = db.query(models.Review).filter(
             models.Review.event_id == event.id
         ).all()
-        
+
         comments = db.query(models.EventComment).filter(
             models.EventComment.event_id == event.id
+        ).all()
+
+        ai_guests = db.query(models.EventAIGuest).filter(
+            models.EventAIGuest.event_id == event.id
         ).all()
 
         # Get event categories
@@ -1465,19 +1510,47 @@ def get_all_events_admin(
 
         photos = [c for c in comments if c.photo_url]
 
+        # Calculate event duration if applicable
+        duration_minutes = None
+        if event.started_at:
+            # Handle both timezone-aware and timezone-naive datetimes
+            if event.ended_at:
+                end_time = event.ended_at
+            else:
+                end_time = datetime.now(timezone.utc)
+
+            # Make started_at timezone-aware if it's naive
+            started_at = event.started_at
+            if started_at.tzinfo is None:
+                started_at = started_at.replace(tzinfo=timezone.utc)
+
+            # Make end_time timezone-aware if it's naive
+            if end_time.tzinfo is None:
+                end_time = end_time.replace(tzinfo=timezone.utc)
+
+            duration = end_time - started_at
+            duration_minutes = int(duration.total_seconds() / 60)
+
         result.append({
             "event": {
                 "id": event.id,
                 "event_name": event.title,
                 "event_date": event.event_date,
                 "status": event.status,
-                "host_id": event.host_id
+                "host_id": event.host_id,
+                "host_name": host.name if host else "Unknown",
+                "host_email": host.email if host else "Unknown",
+                "created_at": event.created_at,
+                "started_at": event.started_at,
+                "ended_at": event.ended_at,
+                "duration_minutes": duration_minutes
             },
             "summary": {
                 "total_attendees": len(guests),
                 "total_reviews": len(reviews),
                 "total_comments": len(comments),
                 "total_photos": len(photos),
+                "total_ai_guests": len(ai_guests),
                 "avg_ratings": avg_ratings  # Dynamic custom category averages
             }
         })
