@@ -77,45 +77,73 @@ echo "=========================================="
 echo "3️⃣  Restarting Backend"
 echo "=========================================="
 
-# Kill existing uvicorn processes
-echo "🛑 Stopping existing backend..."
-pkill -f "uvicorn app.main:app" 2>/dev/null || echo "   No existing process found"
-sleep 2
+# Check if backend is managed by systemd
+if systemctl list-units --type=service --all | grep -q "yamily-backend.service"; then
+    echo "🔧 Backend managed by systemd service"
+    echo "🛑 Restarting yamily-backend.service..."
 
-# Start backend
-echo "🚀 Starting backend..."
-cd backend
+    sudo systemctl restart yamily-backend.service
+    sleep 3
 
-if [ ! -d "venv" ]; then
-    echo "❌ Virtual environment not found at backend/venv"
-    exit 1
-fi
+    # Check service status
+    if sudo systemctl is-active --quiet yamily-backend.service; then
+        echo "✅ Backend service restarted successfully"
 
-source venv/bin/activate
-
-# Start backend in background
-nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 > backend.log 2>&1 &
-BACKEND_PID=$!
-
-sleep 3
-
-# Check if backend started successfully
-if ps -p $BACKEND_PID > /dev/null; then
-    echo "✅ Backend started (PID: $BACKEND_PID)"
-
-    # Test backend
-    if curl -s http://localhost:8000/docs > /dev/null 2>&1; then
-        echo "✅ Backend responding on http://localhost:8000"
+        # Test backend
+        if curl -s http://localhost:8000/docs > /dev/null 2>&1; then
+            echo "✅ Backend responding on http://localhost:8000"
+        else
+            echo "⚠️  Backend service running but not responding yet"
+            echo "   Check logs: sudo journalctl -u yamily-backend.service -n 50"
+        fi
     else
-        echo "⚠️  Backend started but not responding yet (may take a moment)"
+        echo "❌ Backend service failed to start"
+        echo "   Check status: sudo systemctl status yamily-backend.service"
+        echo "   Check logs: sudo journalctl -u yamily-backend.service -n 50"
+        exit 1
     fi
 else
-    echo "❌ Backend failed to start"
-    echo "   Check backend/backend.log for errors"
-    exit 1
-fi
+    # Fallback to manual process management
+    echo "🔧 Backend not managed by systemd, using manual restart"
+    echo "🛑 Stopping existing backend..."
+    pkill -f "uvicorn app.main:app" 2>/dev/null || echo "   No existing process found"
+    sleep 2
 
-cd ..
+    # Start backend
+    echo "🚀 Starting backend..."
+    cd backend
+
+    if [ ! -d "venv" ]; then
+        echo "❌ Virtual environment not found at backend/venv"
+        exit 1
+    fi
+
+    source venv/bin/activate
+
+    # Start backend in background
+    nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 > backend.log 2>&1 &
+    BACKEND_PID=$!
+
+    sleep 3
+
+    # Check if backend started successfully
+    if ps -p $BACKEND_PID > /dev/null; then
+        echo "✅ Backend started (PID: $BACKEND_PID)"
+
+        # Test backend
+        if curl -s http://localhost:8000/docs > /dev/null 2>&1; then
+            echo "✅ Backend responding on http://localhost:8000"
+        else
+            echo "⚠️  Backend started but not responding yet (may take a moment)"
+        fi
+    else
+        echo "❌ Backend failed to start"
+        echo "   Check backend/backend.log for errors"
+        exit 1
+    fi
+
+    cd ..
+fi
 echo ""
 
 # Step 4: Summary
